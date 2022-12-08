@@ -4,11 +4,15 @@ import React from 'react'
 const App = () => {
   return (
     <SafeAreaView>
-      <Text>App</Text>
+      <Text style={styles.container}>App</Text>
     </SafeAreaView>
   )
 }
 
 export default App
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'red',
+  }
+})

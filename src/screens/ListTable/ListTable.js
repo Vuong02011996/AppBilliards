@@ -1,14 +1,7 @@
-
-import {
-    StyleSheet,
-    Text,
-    View,
-    ScrollView,
-    FlatList,
-    TouchableOpacity,
-} from 'react-native';
+import { StyleSheet, Text, View, ScrollView, FlatList, TouchableOpacity } from 'react-native';
 import React from 'react';
-
+import { removeValueOfKey } from '../../utils';
+import { KEY_TABLE_ITEM } from '../../utils';
 
 function TableComponent(props) {
     const { table, onPress } = props;
@@ -29,8 +22,9 @@ function TableComponent(props) {
     );
 }
 
-
 export default function ListTable({ navigation }) {
+    removeValueOfKey(KEY_TABLE_ITEM);
+
     const state = {
         categories: [
             { id: 1, name: 'Bàn 1' },
@@ -52,7 +46,7 @@ export default function ListTable({ navigation }) {
                             table={item}
                             onPress={() => {
                                 navigation.navigate('TableItem', {
-                                    itemId: item.id,
+                                    tableId: item.id,
                                     title: item.name,
                                 });
                             }}

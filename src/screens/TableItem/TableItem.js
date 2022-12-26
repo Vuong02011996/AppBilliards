@@ -1,158 +1,234 @@
-import {
-    StyleSheet,
-    Text,
-    View,
-    TextInput,
-    Button,
-    FlatList,
-    Alert,
-    Pressable,
-} from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, FlatList, Alert, Pressable } from 'react-native';
 import * as React from 'react';
+import uuid from 'react-native-uuid';
+import MenuItem from '../../components/MenuItem.js';
+import { KEY_TABLE_ITEM } from '../../utils/KeyStorage.js';
+import { getDataObject, storeObjectValue, removeValueOfKey } from '../../utils/storage';
 
-export default function TableItem({ route, navigation }) {
-    const onPressXoaMon = (id) => {
-        // Alert.alert('Xoa');
+function TableItem({ route, navigation }) {
+    const { tableId, title } = route.params;
+
+    const handleDeleteMon = (tableId, idItem) => {
         // Xem index xoá là item nào trong menuItemList rồi xóa bằng splice(index, 1)
-        setMenuItemList((menuItemList) => {
-            console.log('index Xoa trong ham', id);
-            const newMenuItemList = [...menuItemList];
-            console.log('newMenuItemList truoc khi xoa', newMenuItemList);
-            newMenuItemList.splice(id, 1);
-            console.log('newMenuItemList sau khi xoa', newMenuItemList);
 
-            return newMenuItemList;
+        // Cập nhật lại số lượng Món trong bàn
+        getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
+            console.log('infoTable trước khi xóa món: ', infoTable);
+            for (var i = 0; i < infoTable.length; i++) {
+                // Tìm đúng bàn
+                if (infoTable[i].tableID == tableId) {
+                    for (var j = 0; j < infoTable[i].infoMenu.length; j++) {
+                        if (infoTable[i].infoMenu[j].idItem === idItem) {
+                            infoTable[i].infoMenu.splice(j, 1);
+                            break;
+                        }
+                    }
+                    if (infoTable[i].infoMenu.length === 0) {
+                        infoTable.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+            console.log('infoTable sau khi xóa món: ', infoTable);
+            storeObjectValue(KEY_TABLE_ITEM, infoTable);
+
+            setMenuItemList((menuItemList) => {
+                console.log('index Xoa trong ham', idItem);
+                const newMenuItemList = [...menuItemList];
+                const newMenuItemList1 = [...newMenuItemList];
+                console.log('newMenuItemList truoc khi xoa', newMenuItemList1);
+                for (var i = 0; i < menuItemList.length; i++) {
+                    if (menuItemList[i].props.props.idItem === idItem) {
+                        console.log(
+                            'menuItemList[i].props.props.idItem Xoa trong ham',
+                            menuItemList[i].props.props.idItem,
+                        );
+                        console.log('index xoa: ', i);
+                        newMenuItemList.splice(i, 1);
+                        break;
+                    }
+                }
+                console.log('newMenuItemList sau khi xoa', newMenuItemList);
+                return newMenuItemList;
+            });
         });
     };
 
-    const RenderMon = ({ props }) => {
-        const { id, showText } = props;
-        console.log('props: ', props);
-        const [text, setText] = React.useState('');
-        const [price, setPrice] = React.useState('');
-        const [quanity, setQuantity] = React.useState('');
-        const [sumMoney, setSumMoney] = React.useState(price);
-        return (
-            <View style={styles.container}>
-                <View>
-                    <Text style={{ display: showText }}>Mon</Text>
-                    <TextInput
-                        style={[styles.textInput, styles.textInputMenu]}
-                        placeholder="Nhập..."
-                        defaultValue={text}
-                        autoFocus={true}
-                        onChangeText={(newText) => {
-                            setText(newText);
-                        }}
-                    />
-                </View>
-                <View>
-                    <Text style={{ display: showText }}>Giá</Text>
-                    <TextInput
-                        style={[styles.textInput, styles.textInputPrice]}
-                        placeholder="Nhập..."
-                        keyboardType="numeric"
-                        value={price}
-                        // blurOnSubmit={false}
-                        autoFocus={false}
-                        // onSubmitEditing={() => price.focus()}
-                        onChange={(newPrice) => {
-                            setPrice(newPrice);
-                        }}
-                    >
-                        {/* <Text style={{ alignSelf: 'flex-end' }}>K</Text> */}
-                    </TextInput>
-                </View>
-                <View>
-                    <Text style={{ display: showText }}>Số lượng</Text>
-                    <TextInput
-                        style={[styles.textInput, styles.textInputQuantity]}
-                        placeholder="Nhập..."
-                        keyboardType="numeric"
-                        value={quanity}
-                        onChangeText={(newQuantity) => {
-                            setQuantity(newQuantity);
-                        }}
-                    />
-                </View>
-                <View>
-                    <Text style={{ display: showText }}>Thành tiền</Text>
-                    <TextInput
-                        style={[styles.textInput, styles.textInputQuantity]}
-                        placeholder="0"
-                        keyboardType="numeric"
-                        value={sumMoney}
-                        onChangeText={(newQuantity) => {
-                            setSumMoney(newQuantity);
-                        }}
-                    />
-                </View>
+    // Danh sách chứa các Món(component MenuItem) để render
+    const [menuItemList, setMenuItemList] = React.useState([]);
 
-                {/* Button Xóa món */}
-                <Pressable
-                    onPress={() => {
-                        console.log('index Xoa', id);
-                        onPressXoaMon(id);
-                    }}
-                    style={({ pressed }) => [
-                        styles.buttonXoa,
-                        {
-                            backgroundColor: pressed ? 'blue' : 'red',
-                        },
-                    ]}
-                >
-                    <Text style={{ textAlign: 'center', fontSize: '16' }}>
-                        Xóa
-                    </Text>
-                </Pressable>
-            </View>
-        );
-    };
-    console.log('re-render');
-    const [menuItemList, setMenuItemList] = React.useState([
-        <RenderMon props={{ showText: 'flex', id: 0 }} />,
-    ]);
+    React.useEffect(() => {
+        getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
+            console.log('infoTable: ', typeof infoTable, infoTable);
+            let menuItemListData;
+            // Chưa có table nào trong infoTable, chưa lưu vào Async Storage
+            // infoTable.length === 0 TH xóa hết infoMenu
+            if (infoTable === null || infoTable.length === 0) {
+                console.log('tableID null: ', tableId);
+                // IdItem 0
+                let idItemRandom = uuid.v4();
+                const data = [
+                    {
+                        tableID: tableId,
+                        menuItemList: [
+                            <MenuItem
+                                props={{
+                                    showText: 'flex',
+                                    idItem: idItemRandom,
+                                    tableId: tableId,
+                                    handleDeleteMon: handleDeleteMon,
+                                }}
+                            />,
+                        ],
+                    },
+                ];
+                menuItemListData = data[0].menuItemList;
+                console.log('infoTable TH1 infoTable = null: ', infoTable);
 
-    // Update lại title khi click vào từng bàn
-    const { itemId, title } = route.params;
+                // lưu infoMenu đầu tiên trong bàn
+                storeObjectValue(KEY_TABLE_ITEM, [
+                    {
+                        tableID: tableId,
+                        infoMenu: [
+                            {
+                                idItem: idItemRandom,
+                                Mon: '',
+                                Gia: '',
+                                SoLuong: '',
+                                ThanhTien: 0,
+                            },
+                        ],
+                    },
+                ]);
+            } else {
+                // Đã có số MenuItem trong table ,
+                // Load lại số lượng menuItem từ AsyncStorage và add vào menuItemListData để render lại
+                // Lấy đúng table ID
+                var tableData = infoTable.find(function (table, index) {
+                    return table.tableID === tableId;
+                });
+                // Món đầu tiên cho bàn chưa có trong infoTable
+                if (tableData === undefined) {
+                    // IdItem 0
+                    let idItemRandom = uuid.v4();
+                    menuItemListData = [
+                        <MenuItem
+                            props={{
+                                showText: 'flex',
+                                idItem: idItemRandom,
+                                tableId: tableId,
+                                handleDeleteMon: handleDeleteMon,
+                            }}
+                        />,
+                    ];
+                    infoTable.push({
+                        tableID: tableId,
+                        infoMenu: [
+                            {
+                                idItem: idItemRandom,
+                                Mon: '',
+                                Gia: '',
+                                SoLuong: '',
+                                ThanhTien: 0,
+                            },
+                        ],
+                    });
+                    storeObjectValue(KEY_TABLE_ITEM, infoTable);
+                    console.log('infoTable TH2 infoTable != null, tableData = undefined, infoTable:', infoTable);
+                }
+                // Nếu có rồi thì lấy số lượng Món và render
+                else {
+                    // IdItem 0
+                    menuItemListData = [
+                        <MenuItem
+                            props={{
+                                showText: 'flex',
+                                idItem: tableData.infoMenu[0].idItem,
+                                tableId: tableId,
+                                handleDeleteMon: handleDeleteMon,
+                            }}
+                        />,
+                    ];
+                    for (var i = 1; i < tableData.infoMenu.length; i++) {
+                        menuItemListData.push(
+                            <MenuItem
+                                props={{
+                                    showText: 'none',
+                                    idItem: tableData.infoMenu[i].idItem,
+                                    tableId: tableId,
+                                    handleDeleteMon: handleDeleteMon,
+                                }}
+                            />,
+                        );
+                    }
+                    console.log('infoTable TH3 infoTable != null, tableData != undefined, infoTable: ', infoTable);
+                }
+            }
+            setMenuItemList(menuItemListData);
+        });
+    }, []);
+
+    // Update lại tên title khi click vào từng bàn
     React.useEffect(() => {
         if (route.params?.title) {
             navigation.setOptions({ title: title });
         }
     }, [route.params?.title]);
 
-    // Button thêm món sẽ add thêm một RenderMon vào mảng
+    //Thêm món
     React.useEffect(() => {
-        // Use `setOptions` to update the button that we previously specified
-        // Now the button includes an `onPress` handler to update the count
         navigation.setOptions({
             headerRight: () => (
                 <Pressable
-                    onPress={() =>
-                        setMenuItemList((menuItemList) => {
-                            const newMenuItemList = [...menuItemList];
-                            newMenuItemList.push(
-                                <RenderMon
-                                    props={{
-                                        showText: 'none',
-                                        id: newMenuItemList.length,
-                                    }}
-                                />,
-                            );
-                            return newMenuItemList;
-                        })
-                    }
+                    onPress={() => {
+                        // Cập nhật lại số lượng Món trong bàn
+                        // setMenuItemList phải nằm trong bất đồng bộ để chạy sau
+                        getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
+                            console.log('infoTable trước khi thêm món: ', infoTable);
+                            let idItemRandom = uuid.v4();
+                            for (var i = 0; i < infoTable.length; i++) {
+                                // Tìm đúng bàn
+                                if (infoTable[i].tableID == tableId) {
+                                    infoTable[i].infoMenu.push({
+                                        idItem: idItemRandom,
+                                        Mon: '',
+                                        Gia: '',
+                                        SoLuong: '',
+                                        ThanhTien: 0,
+                                    });
+                                }
+                            }
+                            console.log('infoTable sau khi thêm món: ', infoTable);
+                            storeObjectValue(KEY_TABLE_ITEM, infoTable);
+
+                            // Thêm món vào menuItemList và render lại
+                            setMenuItemList((menuItemList) => {
+                                const newMenuItemList = [...menuItemList];
+
+                                newMenuItemList.push(
+                                    <MenuItem
+                                        props={{
+                                            showText: 'none',
+                                            idItem: idItemRandom,
+                                            tableId: tableId,
+                                            handleDeleteMon: handleDeleteMon,
+                                        }}
+                                    />,
+                                );
+                                return newMenuItemList;
+                            });
+                        });
+                    }}
                     style={{
                         backgroundColor: 'blue',
                         padding: 8,
-                        borderRadius: '5%',
                     }}
                 >
                     <Text
                         style={{
                             textAlign: 'center',
                             fontSize: 16,
-                            color: 'yellow',
+                            color: 'white',
                         }}
                     >
                         Thêm
@@ -161,47 +237,35 @@ export default function TableItem({ route, navigation }) {
             ),
         });
     }, [navigation]);
-    console.log('menuItemList', menuItemList);
+
+    // Tính tiền giờ bàn và tổng tiền trong menu
+    // Cứ mỗi phút sẽ lấy thời gian hiện tại trừ cho thời gian start * tiền mỗi phút
+    // Tổng tiền menu sẽ lấy từ AsyncStorage
     return (
         <View>
             <FlatList
                 data={menuItemList}
-                keyExtractor={(item, index) => `${index}`}
+                keyExtractor={(item, index) => {
+                    console.log('item.props.props.idItem: ', item.props.props.idItem);
+                    return `${index}`;
+                }}
                 renderItem={({ item }) => {
+                    console.log('len menuItemList', menuItemList.length);
+                    console.log('render item', item);
                     return item;
                 }}
             />
+            {/* <RenderMon props={{ showText: 'flex', id: 0 }} /> */}
+            <Text>Tổng tiền: </Text>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-    },
-    textInput: {
-        backgroundColor: '#ccc',
-        marginRight: 4,
-        fontSize: 18,
-        paddingVertical: 8,
-        borderWidth: 1,
-    },
-    textInputMenu: {
-        minWidth: 100,
-    },
-    textInputPrice: {
-        minWidth: 70,
-    },
-    textInputQuantity: {
-        minWidth: 50,
-    },
-    buttonXoa: {
-        // height: 20,
-        width: 70,
-        paddingVertical: 8,
-        backgroundColor: 'blue',
-        borderRadius: '10%',
-    },
-});
+export default TableItem;
+const styles = StyleSheet.create({});
+
+/**
+ * Tính tổng
+ * Hiển thị giờ start, và tổng tiền bên ngoài, trang trí thêm bàn bên ngoài
+ * Thêm nút Đặt lại : start lại giờ bắt đầu, xóa hết món trong table.
+ */

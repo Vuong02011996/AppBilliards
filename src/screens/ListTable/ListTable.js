@@ -1,22 +1,71 @@
-import { StyleSheet, Text, View, ScrollView, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Pressable, FlatList, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { removeValueOfKey } from '../../utils';
 import { KEY_TABLE_ITEM } from '../../utils';
 
+const convertDay = {
+    1: 'Thứ hai',
+    2: 'Thứ ba',
+    3: 'Thứ tư',
+    4: 'Thứ năm',
+    5: 'Thứ sáu',
+    6: 'Thứ bảy',
+    7: 'Chủ Nhật',
+};
 function TableComponent(props) {
     const { table, onPress } = props;
     // console.log('props: ', props);
-    let curTime = new Date().toLocaleString();
-    // let curTime = new Date();
-    // console.log(curTime);
+    // let curTime = new Date().toLocaleString();
+    let d = new Date();
+    let day = d.getDay();
 
+    // console.log(curTime);
+    const [currentTime, setcurentTime] = React.useState();
+    const [status, setStatus] = React.useState('Trống');
+
+    React.useEffect(() => {
+        const timer = setInterval(() => {
+            setcurentTime(new Date().toLocaleString());
+        }, 1000);
+
+        return () => {
+            clearInterval(timer);
+        };
+    }, []);
     return (
-        <TouchableOpacity activeOpacity={0.3} onPress={onPress}>
-            <View style={styles.tableComponent}>
-                <Text style={styles.title}>{table.name}</Text>
-                <Text>{curTime}</Text>
-                {/* <Image style={{height: 64, width:64}} source={image1}></Image> */}
-                {/* <Image style={styles.categoryImage} source={image1}></Image> */}
+        <TouchableOpacity
+            activeOpacity={0.3}
+            onPress={onPress}
+            style={{
+                height: 150,
+                borderRadius: 4,
+                backgroundColor: '#8af0b2',
+                shadowColor: '#171717',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.5,
+                shadowRadius: 10,
+                // shawdow for android
+                elevation: 5,
+                marginBottom: 16,
+            }}
+        >
+            <View>
+                <Text
+                    style={{
+                        textTransform: 'uppercase',
+                        marginBottom: 8,
+                        fontWeight: '600',
+                        // textAlign: 'center',
+                        // textAlignVertical: 'center',
+                    }}
+                >
+                    {table.name}
+                </Text>
+                <Text>
+                    {convertDay[String(day)]} {currentTime}
+                </Text>
+                <Text></Text>
+                <Text>{status}</Text>
             </View>
         </TouchableOpacity>
     );
@@ -66,21 +115,5 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         alignItems: 'stretch',
         justifyContent: 'center',
-    },
-    tableComponent: {
-        // alignItems: 'flex-end',
-        padding: 48,
-        borderRadius: 4,
-        backgroundColor: '#fff',
-        shadowColor: '#000',
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 0 },
-        marginBottom: 16,
-    },
-    title: {
-        textTransform: 'uppercase',
-        marginBottom: 8,
-        fontWeight: '600',
     },
 });

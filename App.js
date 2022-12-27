@@ -20,7 +20,7 @@ function AppNavigation() {
                     options={{
                         title: 'HOME',
                         headerStyle: {
-                            backgroundColor: '#f45',
+                            backgroundColor: '#faa22f',
                         },
                         // headerTintColor: '#fff',
                         headerTitleStyle: {

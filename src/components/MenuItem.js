@@ -5,7 +5,7 @@ import { getDataString, storeDataString, storeObjectValue, getDataObject, remove
 import { KEY_MON, KEY_GIA, KEY_SO_LUONG, KEY_THANH_TIEN, KEY_MENU_ITEM, KEY_TABLE_ITEM } from '../utils';
 
 const MenuItem = ({ props }) => {
-    const { idItem, showText, tableId, handleDeleteMon } = props;
+    const { idItem, showText, tableId, handleDeleteMon, setTongTien } = props;
     console.log('handleDeleteMon: ', handleDeleteMon);
     console.log('idItem: ', idItem);
     console.log('render lai sau khi xoa 1: idItem: tableId', idItem, tableId);
@@ -67,16 +67,25 @@ const MenuItem = ({ props }) => {
                                 break;
                             }
                         }
+                        // Tính tổng tiền sau mỗi lần update
+                        var sumMoney = infoTable[i].infoMenu.reduce(function (total, infoMenuItem) {
+                            return total + infoMenuItem.ThanhTien;
+                        }, 0);
+
+                        console.log('infoTable sau thay doi gia, sl: ', infoTable);
+
+                        storeObjectValue(KEY_TABLE_ITEM, infoTable);
+                        setInputMoney(money);
+                        setTongTien(sumMoney);
+
                         break;
                     }
                 }
-                console.log('infoTable sau thay doi gia, sl: ', infoTable);
-
-                storeObjectValue(KEY_TABLE_ITEM, infoTable);
-                setInputMoney(money);
             });
         }
-    }, [inputQuantity, inputPrice]);
+        // Chỉ cần một trong 3 giá trị inputQuantity, inputPrice, inputData thay đổi sẽ nhảy vào useEffect này
+        // Cần thêm inputData nếu không sẽ không lưu tên nếu gõ tên món sau cùng
+    }, [inputQuantity, inputPrice, inputData]);
 
     return (
         <View style={styles.container}>

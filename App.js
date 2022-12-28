@@ -18,7 +18,7 @@ function AppNavigation() {
                     name="ListTable"
                     component={ListTable}
                     options={{
-                        title: 'HOME',
+                        title: 'TRANG CHỦ',
                         headerStyle: {
                             backgroundColor: '#faa22f',
                         },

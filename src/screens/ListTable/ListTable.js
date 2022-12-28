@@ -21,7 +21,6 @@ function TableComponent(props) {
 
     // console.log(curTime);
     const [currentTime, setcurentTime] = React.useState();
-    const [status, setStatus] = React.useState('Trống');
 
     React.useEffect(() => {
         const timer = setInterval(() => {
@@ -49,23 +48,32 @@ function TableComponent(props) {
                 marginBottom: 16,
             }}
         >
-            <View>
+            <View style={{ alignItems: 'center', justifyContent: 'center' }}>
                 <Text
                     style={{
                         textTransform: 'uppercase',
                         marginBottom: 8,
                         fontWeight: '600',
+                        fontSize: 24,
+                        marginTop: 50,
                         // textAlign: 'center',
                         // textAlignVertical: 'center',
                     }}
                 >
                     {table.name}
                 </Text>
-                <Text>
+                <Text
+                    style={{
+                        textTransform: 'uppercase',
+                        marginBottom: 8,
+                        fontWeight: '600',
+                        textAlign: 'center',
+                        textAlignVertical: 'center',
+                        color: 'green',
+                    }}
+                >
                     {convertDay[String(day)]} {currentTime}
                 </Text>
-                <Text></Text>
-                <Text>{status}</Text>
             </View>
         </TouchableOpacity>
     );

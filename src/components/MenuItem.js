@@ -5,19 +5,12 @@ import { getDataString, storeDataString, storeObjectValue, getDataObject, remove
 import { KEY_MON, KEY_GIA, KEY_SO_LUONG, KEY_THANH_TIEN, KEY_MENU_ITEM, KEY_TABLE_ITEM } from '../utils';
 
 const MenuItem = ({ props }) => {
-    const { idItem, showText, tableId, handleDeleteMon, setTongTien } = props;
-    console.log('handleDeleteMon: ', handleDeleteMon);
-    console.log('idItem: ', idItem);
-    console.log('render lai sau khi xoa 1: idItem: tableId', idItem, tableId);
+    const { idItem, showText, tableId, handleDeleteMon, setTienMenu, setTongTien } = props;
 
     const [inputData, setInputData] = React.useState('');
     const [inputPrice, setInputPrice] = React.useState('');
     const [inputQuantity, setInputQuantity] = React.useState('');
     const [inputMoney, setInputMoney] = React.useState(0);
-    console.log('inputData sau khi xoa', inputData);
-    console.log('inputPrice sau khi xoa', inputPrice);
-    console.log('inputQuantity sau khi xoa', inputQuantity);
-    console.log('inputMoney sau khi xoa', inputMoney);
     // Chạy một lần khi render tới MenuItem nào trong menuItemList thì lấy giá trị từ storage hiển thị lên
     React.useEffect(() => {
         console.log('render lai sau khi xoa 2: idItem: tableId', idItem, tableId);
@@ -68,7 +61,7 @@ const MenuItem = ({ props }) => {
                             }
                         }
                         // Tính tổng tiền sau mỗi lần update
-                        var sumMoney = infoTable[i].infoMenu.reduce(function (total, infoMenuItem) {
+                        var menuMoney = infoTable[i].infoMenu.reduce(function (total, infoMenuItem) {
                             return total + infoMenuItem.ThanhTien;
                         }, 0);
 
@@ -76,7 +69,9 @@ const MenuItem = ({ props }) => {
 
                         storeObjectValue(KEY_TABLE_ITEM, infoTable);
                         setInputMoney(money);
-                        setTongTien(sumMoney);
+                        setTienMenu(menuMoney);
+                        console.log('infoTable[i].tienMenu: ', infoTable[i].tienMenu);
+                        setTongTien(menuMoney + infoTable[i].tienGio);
 
                         break;
                     }
@@ -92,7 +87,7 @@ const MenuItem = ({ props }) => {
             <View>
                 {/* Trên android Text/ TextInput không có height sẽ không hiện */}
                 {console.log('render lai sau khi xoa 4: idItem: tableId', idItem, tableId)}
-                <Text style={{ height: 30, display: showText }}>Mon</Text>
+                <Text style={{ height: 30, display: showText }}>Món</Text>
                 <TextInputCustom
                     props={{
                         inputData: inputData,
@@ -105,31 +100,31 @@ const MenuItem = ({ props }) => {
 
             {/* Gia */}
             <View>
-                <Text style={{ height: 30, display: showText }}>Gia</Text>
+                <Text style={{ height: 30, display: showText }}>Giá</Text>
                 <TextInputCustom
                     props={{
                         inputData: inputPrice,
                         setInputData: setInputPrice,
                         keyboardType: 'numeric',
-                        minWidth: 50,
+                        minWidth: 30,
                     }}
                 />
             </View>
             {/* So luong */}
             <View>
-                <Text style={{ height: 30, display: showText }}>So luong</Text>
+                <Text style={{ height: 30, display: showText }}>Số lượng</Text>
                 <TextInputCustom
                     props={{
                         inputData: inputQuantity,
                         setInputData: setInputQuantity,
                         keyboardType: 'numeric',
-                        minWidth: 50,
+                        minWidth: 30,
                     }}
                 />
             </View>
             {/* Thanh tien */}
             <View>
-                <Text style={{ height: 30, display: showText }}>Thanh tien</Text>
+                <Text style={{ height: 30, display: showText }}>Thành tiền</Text>
                 <Text
                     style={{
                         borderWidth: 1,
@@ -147,17 +142,16 @@ const MenuItem = ({ props }) => {
             </View>
             {/* Button Xóa món */}
             <View style={{ marginLeft: 8, marginBottom: 4 }}>
-                <Text style={{ height: 30, textAlign: 'center', display: showText }}>Xoa</Text>
+                <Text style={{ height: 30, textAlign: 'center', display: showText }}>Xóa món</Text>
                 <Pressable
                     onPress={() => {
-                        console.log('Xoa');
                         handleDeleteMon(tableId, idItem);
                     }}
                     style={({ pressed }) => [
                         {
                             backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
                         },
-                        { width: 70, height: 50, justifyContent: 'center' },
+                        { width: 50, height: 50, justifyContent: 'center' },
                     ]}
                 >
                     <Text
@@ -168,7 +162,7 @@ const MenuItem = ({ props }) => {
                             color: 'white',
                         }}
                     >
-                        Xoa
+                        Xóa
                     </Text>
                 </Pressable>
             </View>

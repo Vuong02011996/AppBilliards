@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { StyleSheet, Text, View, Pressable, TouchableOpacity } from 'react-native';
+import { AutocompleteDropdown } from 'react-native-autocomplete-dropdown';
 import React from 'react';
 import TextInputCustom from './TextInputCustom';
 import { getDataString, storeDataString, storeObjectValue, getDataObject, removeValueOfKey } from '../utils';
@@ -13,8 +14,6 @@ const MenuItem = ({ props }) => {
     const [inputMoney, setInputMoney] = React.useState(0);
     // Chạy một lần khi render tới MenuItem nào trong menuItemList thì lấy giá trị từ storage hiển thị lên
     React.useEffect(() => {
-        console.log('render lai sau khi xoa 2: idItem: tableId', idItem, tableId);
-
         getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
             // Tim dung ban
             var tableData = infoTable.find(function (table, index) {
@@ -26,7 +25,6 @@ const MenuItem = ({ props }) => {
                     return item.idItem === idItem;
                 });
                 if (itemData) {
-                    console.log('itemData: ', itemData);
                     setInputData(itemData.Mon);
                     setInputPrice(itemData.Gia);
                     setInputQuantity(itemData.SoLuong);
@@ -37,12 +35,9 @@ const MenuItem = ({ props }) => {
     }, [idItem]);
 
     React.useEffect(() => {
-        console.log('render lai sau khi xoa 3: idItem: tableId', idItem, tableId);
-
         if (inputPrice != '' && inputQuantity != '') {
             const money = inputPrice * inputQuantity;
             getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
-                console.log('infoTable truoc thay doi gia, sl: ', infoTable);
                 for (var i = 0; i < infoTable.length; i++) {
                     // Tìm đúng bàn
                     if (infoTable[i].tableID == tableId) {
@@ -65,12 +60,9 @@ const MenuItem = ({ props }) => {
                             return total + infoMenuItem.ThanhTien;
                         }, 0);
 
-                        console.log('infoTable sau thay doi gia, sl: ', infoTable);
-
                         storeObjectValue(KEY_TABLE_ITEM, infoTable);
                         setInputMoney(money);
                         setTienMenu(menuMoney);
-                        console.log('infoTable[i].tienMenu: ', infoTable[i].tienMenu);
                         setTongTien(menuMoney + infoTable[i].tienGio);
 
                         break;
@@ -82,11 +74,17 @@ const MenuItem = ({ props }) => {
         // Cần thêm inputData nếu không sẽ không lưu tên nếu gõ tên món sau cùng
     }, [inputQuantity, inputPrice, inputData]);
 
+    // auto complete text input
+    // For Filtered Data
+    const [monSuggestion, setFilteredMons] = React.useState(['mì', 'nước', 'Mì', 'Mit', 'Minh', 'Me']);
+    // For Selected Data
+    // const [selectedValue, setSelectedValue] = useState({});
+    const [selectedItem, setSelectedItem] = React.useState(null);
+
     return (
         <View style={styles.container}>
+            {/* Ghi món */}
             <View>
-                {/* Trên android Text/ TextInput không có height sẽ không hiện */}
-                {console.log('render lai sau khi xoa 4: idItem: tableId', idItem, tableId)}
                 <Text style={{ height: 30, display: showText }}>Món</Text>
                 <TextInputCustom
                     props={{
@@ -94,10 +92,10 @@ const MenuItem = ({ props }) => {
                         setInputData: setInputData,
                         keyboardType: null,
                         minWidth: 100,
+                        autoFocus: true,
                     }}
                 />
             </View>
-
             {/* Gia */}
             <View>
                 <Text style={{ height: 30, display: showText }}>Giá</Text>
@@ -107,6 +105,7 @@ const MenuItem = ({ props }) => {
                         setInputData: setInputPrice,
                         keyboardType: 'numeric',
                         minWidth: 30,
+                        autoFocus: false,
                     }}
                 />
             </View>
@@ -119,6 +118,7 @@ const MenuItem = ({ props }) => {
                         setInputData: setInputQuantity,
                         keyboardType: 'numeric',
                         minWidth: 30,
+                        autoFocus: false,
                     }}
                 />
             </View>

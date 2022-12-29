@@ -15,7 +15,7 @@ const TextInputCustom = ({ props }) => {
             keyboardType={props.keyboardType}
             placeholder="Nhập..."
             defaultValue={props.inputData}
-            autoFocus={false}
+            autoFocus={props.autoFocus}
             onChangeText={(newInputData) => {
                 props.setInputData(newInputData);
             }}

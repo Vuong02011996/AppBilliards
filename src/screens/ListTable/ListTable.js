@@ -36,7 +36,8 @@ function TableComponent(props) {
             activeOpacity={0.3}
             onPress={onPress}
             style={{
-                height: 150,
+                // heighpadpadt: 100,
+                paddingVertical: 10,
                 borderRadius: 4,
                 backgroundColor: '#8af0b2',
                 shadowColor: '#171717',
@@ -55,7 +56,7 @@ function TableComponent(props) {
                         marginBottom: 8,
                         fontWeight: '600',
                         fontSize: 24,
-                        marginTop: 50,
+                        marginTop: 20,
                         // textAlign: 'center',
                         // textAlignVertical: 'center',
                     }}
@@ -80,7 +81,7 @@ function TableComponent(props) {
 }
 
 export default function ListTable({ navigation }) {
-    removeValueOfKey(KEY_TABLE_ITEM);
+    // removeValueOfKey(KEY_TABLE_ITEM);
 
     const state = {
         categories: [
@@ -88,6 +89,7 @@ export default function ListTable({ navigation }) {
             { id: 2, name: 'Bàn 2' },
             { id: 3, name: 'Bàn 3' },
             { id: 4, name: 'Bàn 4' },
+            { id: 5, name: 'Bàn 5' },
         ],
     };
 

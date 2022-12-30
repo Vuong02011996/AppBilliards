@@ -75,17 +75,13 @@ const MenuItem = ({ props }) => {
     }, [inputQuantity, inputPrice, inputData]);
 
     // auto complete text input
-    // For Filtered Data
-    const [monSuggestion, setFilteredMons] = React.useState(['mì', 'nước', 'Mì', 'Mit', 'Minh', 'Me']);
-    // For Selected Data
-    // const [selectedValue, setSelectedValue] = useState({});
-    const [selectedItem, setSelectedItem] = React.useState(null);
+    // Fail
 
     return (
         <View style={styles.container}>
             {/* Ghi món */}
             <View>
-                <Text style={{ height: 30, display: showText }}>Món</Text>
+                <Text style={{ height: 30, display: showText }}>Tên Món</Text>
                 <TextInputCustom
                     props={{
                         inputData: inputData,
@@ -98,7 +94,7 @@ const MenuItem = ({ props }) => {
             </View>
             {/* Gia */}
             <View>
-                <Text style={{ height: 30, display: showText }}>Giá</Text>
+                <Text style={{ height: 30, display: showText }}>Đơn Giá</Text>
                 <TextInputCustom
                     props={{
                         inputData: inputPrice,

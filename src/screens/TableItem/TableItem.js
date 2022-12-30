@@ -29,7 +29,9 @@ function TableItem({ route, navigation }) {
     const [thoiGianChoi, setThoiGianChoi] = React.useState(0);
     const [tienGioMoiPhut, setTienGioMoiPhut] = React.useState(420);
     const [tienGio, setTienGio] = React.useState(0);
-    const [tongtien, setTongTien] = React.useState(0);
+    const [tongTien, setTongTien] = React.useState(0);
+    const [tienKhachDua, setTienKhachDua] = React.useState(0);
+    const [tienThoiLai, setTienThoiLai] = React.useState(0);
 
     const handleDeleteMon = (tableId, idItem) => {
         // Xem index xoá là item nào trong menuItemList rồi xóa bằng splice(index, 1)
@@ -166,7 +168,7 @@ function TableItem({ route, navigation }) {
                             let intervalTimeCost = timeClose - timeStart;
                             if (intervalTimeCost > 0) {
                                 intervalTimeCost = Math.round(intervalTimeCost / 1000 / 60);
-                                const moneyTime = (intervalTimeCost * tienGioMoiPhut) / 1000;
+                                const moneyTime = Math.ceil((intervalTimeCost * tienGioMoiPhut) / 1000);
                                 const totalMoney = moneyTime + tienMenu;
 
                                 infoTable[i].gioNghi = currTime;
@@ -274,6 +276,8 @@ function TableItem({ route, navigation }) {
                         setThoiGianChoi(0);
                         setTienGio(0);
                         setTongTien(0);
+                        setTienKhachDua(0);
+                        setTienThoiLai(0);
                         break;
                     }
                 }
@@ -296,6 +300,16 @@ function TableItem({ route, navigation }) {
         }
     };
 
+    // handle thối lại tiên
+    const handelThoiTien = (newTienKhachDua) => {
+        if (newTienKhachDua > 0) {
+            setTienKhachDua(newTienKhachDua);
+            setTienThoiLai(newTienKhachDua - tongTien);
+        } else {
+            setTienKhachDua(0);
+            setTienThoiLai(0);
+        }
+    };
     // Handle In hóa đơn
     const handelInHoaDon = () => {};
 
@@ -493,9 +507,12 @@ function TableItem({ route, navigation }) {
         });
     }, [navigation]);
 
-    // Tính tiền giờ bàn và tổng tiền trong menu
-    // Cứ mỗi phút sẽ lấy thời gian hiện tại trừ cho thời gian start * tiền mỗi phút
-    // Tổng tiền menu sẽ lấy từ AsyncStorage
+    // Tính lại tiền thừa khi có tiền khách đưa mỗi khi tổng tiền thay đổi
+    React.useEffect(() => {
+        if (tienKhachDua > 0) {
+            setTienThoiLai(tienKhachDua - tongTien);
+        }
+    }, [tongTien]);
 
     return (
         <TouchableWithoutFeedback>
@@ -518,7 +535,10 @@ function TableItem({ route, navigation }) {
 
                 {/* Thông tin hóa đơn */}
                 <View>
-                    <Text style={styles.textTongTienThucDon}>Tổng tiền thực đơn: {tienMenu}K</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textTongTienThucDon, { minWidth: 246 }]}>Tổng tiền thực đơn:</Text>
+                        <Text style={styles.textTongTienThucDon}>{tienMenu}K</Text>
+                    </View>
                     {/* Giờ vào */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
                         <Text style={styles.textGio}>Giờ vào: </Text>
@@ -567,16 +587,48 @@ function TableItem({ route, navigation }) {
                             </Text>
                         </Pressable>
                     </View>
-                    <Text style={styles.textThoiGianChoi}>Thời gian chơi: {thoiGianChoi} phút</Text>
-                    <Text style={styles.textTongTien}>Tiền Giờ: {tienGio}K</Text>
-                    <Text style={[styles.textTongTien, { color: 'blue' }]}>Tổng tiền: {tongtien}K</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textThoiGianChoi, { minWidth: 246 }]}>Thời gian chơi: </Text>
+                        <Text style={styles.textThoiGianChoi}>{thoiGianChoi} phút</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textTongTien, { minWidth: 246 }]}>Tiền Giờ:</Text>
+                        <Text style={styles.textTongTien}>{tienGio}K</Text>
+                    </View>
+                    <Text style={[styles.textTongTien, { color: '#000', marginVertical: 4, fontSize: 20 }]}>
+                        Tổng tiền thanh toán: {tongTien}K
+                    </Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textThoiGianChoi, { minWidth: 246, color: '#5f5151', fontWeight: '500' }]}>
+                            Tiền khách đưa:
+                        </Text>
+                        <TextInput
+                            style={styles.textInputTienKhachDua}
+                            keyboardType="numeric"
+                            onChangeText={handelThoiTien}
+                        >
+                            {tienKhachDua}
+                        </TextInput>
+                        <Text style={[styles.textThoiGianChoi, { minWidth: 246, color: '#000', fontWeight: '500' }]}>
+                            K
+                        </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row' }}>
+                        <Text style={[styles.textThoiGianChoi, { minWidth: 246, color: '#5f5151', fontWeight: '500' }]}>
+                            Tiền thừa:
+                        </Text>
+                        <Text style={[styles.textThoiGianChoi, { minWidth: 246, color: '#000', fontWeight: '500' }]}>
+                            {tienThoiLai}K
+                        </Text>
+                    </View>
+
                     {/* Tiền giờ mỗi phút */}
                     <View
                         style={{
                             flexDirection: 'row',
                         }}
                     >
-                        <Text style={styles.textTienGioMoiPhut}>Tiền giờ mỗi phút:</Text>
+                        <Text style={styles.textTienGioMoiPhut}>Đơn giá mỗi phút:</Text>
 
                         <TextInput
                             style={styles.textInputChangeTienMoiPhut}
@@ -644,7 +696,7 @@ function TableItem({ route, navigation }) {
 export default TableItem;
 const styles = StyleSheet.create({
     textGio: {
-        fontSize: 18,
+        fontSize: 16,
         textAlign: 'center',
         textAlignVertical: 'center',
         fontWeight: 'bold',
@@ -652,7 +704,7 @@ const styles = StyleSheet.create({
     buttonDatGio: {
         backgroundColor: 'blue',
         padding: 8,
-        width: 110,
+        width: 120,
     },
     textTienGioMoiPhut: {
         fontSize: 15,
@@ -674,6 +726,19 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         marginHorizontal: 10,
     },
+    textInputTienKhachDua: {
+        borderWidth: 1,
+        fontSize: 18,
+        height: 30,
+        backgroundColor: 'yellow',
+        color: 'black',
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        // padding: 0,
+        paddingHorizontal: 30,
+        paddingVertical: 4,
+    },
+
     textTongTienThucDon: {
         fontWeight: '600',
         fontSize: 18,
@@ -694,11 +759,10 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Thêm nút Đặt lại : start lại giờ bắt đầu, xóa hết món trong table.
+ * Bug Thêm nút Đặt lại : start lại giờ bắt đầu, xóa hết món trong table.
  * Gợi ý tên món bấm nhanh- không được khó - z index of thẻ text input Flatlist.
- * Đặt focus vô tên món trước
  * Kết nối máy in bằng wifi blutooth
  * Thêm máy tính nếu chơi rồi chơi tiếp(chưa cần)
- *
+ * Handle useEffect khi tien thanh toan thay doi ma tien khach dua > 0 thi cap nhat lai tien thua
  * Bug
  */

@@ -5,6 +5,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ListTable from './src/screens/ListTable/ListTable';
 import TableItem from './src/screens/TableItem/TableItem';
+import TaoMon from './src/screens/TaoMon/TaoMon';
+import ChonMon from './src/screens/ChonMon/ChonMon';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,7 +20,7 @@ function AppNavigation() {
                     name="ListTable"
                     component={ListTable}
                     options={{
-                        title: 'TRANG CHỦ',
+                        title: 'Sơ đồ khu vực bàn',
                         headerStyle: {
                             backgroundColor: '#faa22f',
                         },
@@ -29,6 +31,8 @@ function AppNavigation() {
                     }}
                 />
                 <Stack.Screen name="TableItem" component={TableItem} />
+                <Stack.Screen name="TaoMon" component={TaoMon} />
+                <Stack.Screen name="ChonMon" component={ChonMon} />
             </Stack.Navigator>
         </NavigationContainer>
     );

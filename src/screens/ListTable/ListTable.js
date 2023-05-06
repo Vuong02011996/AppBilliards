@@ -1,7 +1,6 @@
+/* eslint-disable react-native/no-inline-styles */
 import { StyleSheet, Text, View, Pressable, FlatList, TouchableOpacity } from 'react-native';
 import React from 'react';
-import { removeValueOfKey } from '../../utils';
-import { KEY_TABLE_ITEM } from '../../utils';
 
 const convertDay = {
     1: 'Thứ hai',
@@ -90,15 +89,24 @@ export default function ListTable({ navigation }) {
             { id: 3, name: 'Bàn 3' },
             { id: 4, name: 'Bàn 4' },
             { id: 5, name: 'Bàn 5' },
+            { id: 6, name: 'Bàn 6' },
+            { id: 7, name: 'Bàn 7' },
         ],
     };
 
     const categories = state.categories;
 
+    const handlePress = () => {
+        console.log('Button pressed!');
+        navigation.navigate('TaoMon');
+    };
+
     return (
         <View style={styles.container}>
             <FlatList
                 data={categories}
+                // horizontal={false}
+                // numColumns={2}
                 renderItem={({ item }) => {
                     return (
                         <TableComponent
@@ -113,8 +121,13 @@ export default function ListTable({ navigation }) {
                     );
                 }}
                 keyExtractor={(item) => `${item.id}`}
-                contentContainerStyle={{ paddingLeft: 32, paddingRight: 32 }}
+                contentContainerStyle={{ paddingLeft: 8, paddingRight: 8 }}
             />
+            <View style={styles.footer}>
+                <TouchableOpacity style={styles.button} onPress={handlePress}>
+                    <Text style={styles.buttonText}>Tạo món</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }
@@ -123,7 +136,26 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        alignItems: 'stretch',
+        alignItems: 'center',
         justifyContent: 'center',
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 50,
+        backgroundColor: 'lightgray',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    button: {
+        backgroundColor: 'blue',
+        padding: 10,
+        borderRadius: 5,
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
     },
 });

@@ -11,65 +11,27 @@ import {
     KeyboardAvoidingView,
     ScrollView,
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
 import moment from 'moment';
 import uuid from 'react-native-uuid';
 import MenuItem from '../../components/MenuItem.js';
-import RenderMon from '../../components/RenderMon.js';
 import { KEY_TABLE_ITEM } from '../../utils/KeyStorage.js';
 import { getDataObject, storeObjectValue, removeValueOfKey } from '../../utils/storage';
 
 function TableItem({ route, navigation }) {
-    // Danh sách chứa các Món(component MenuItem) để render
-    const [menuItemList, setMenuItemList] = useState([]);
-    const [tienMenu, setTienMenu] = useState(0);
-    const [gioVao, setGioVao] = useState('Chưa đặt');
-    const [gioNghi, setGioNghi] = useState('Chưa bấm');
-    const [thoiGianChoi, setThoiGianChoi] = useState(0);
-    const [tienGioMoiPhut, setTienGioMoiPhut] = useState(420);
-    const [tienGio, setTienGio] = useState(0);
-    const [tongTien, setTongTien] = useState(0);
-    const [tienKhachDua, setTienKhachDua] = useState(0);
-    const [tienThoiLai, setTienThoiLai] = useState(0);
-
     const { tableId, title } = route.params;
-    // 1, Bàn 1
-    console.log('tableId: ', tableId);
-    console.log('title: ', title);
 
-    useEffect(() => {
-        firestore()
-            .collection('Danh sach ban')
-            .doc(title)
-            .get()
-            .then((documentSnapshot) => {
-                // console.log('Danh sach ban exists: ', documentSnapshot.exists);
-                if (documentSnapshot.exists) {
-                    // console.log('User data: ', documentSnapshot.data());
-                    const data_table = documentSnapshot.data();
-                    if (data_table['trang_thai'] === 'unactive') {
-                        // Bàn chưa chơi reset lại giá trị khởi tạo
-                        console.log('trang thai', data_table['trang_thai']);
-                    } else {
-                        // Bàn đang chơi load giá trị đang chơi : món, tiền giờ, ...
-                    }
-                } else {
-                    // Nếu bàn chưa được tạo trên firebase thì tạo.
-                    firestore()
-                        .collection('Danh sach ban')
-                        .doc(title)
-                        .set({
-                            id_ban: title,
-                            trang_thai: 'unactive',
-                            createdAt: firestore.FieldValue.serverTimestamp(),
-                        })
-                        .then(() => {
-                            console.log('Table added!');
-                        });
-                }
-            });
-    }, [title]);
+    // Danh sách chứa các Món(component MenuItem) để render
+    const [menuItemList, setMenuItemList] = React.useState([]);
+    const [tienMenu, setTienMenu] = React.useState(0);
+    const [gioVao, setGioVao] = React.useState('Chưa đặt');
+    const [gioNghi, setGioNghi] = React.useState('Chưa bấm');
+    const [thoiGianChoi, setThoiGianChoi] = React.useState(0);
+    const [tienGioMoiPhut, setTienGioMoiPhut] = React.useState(420);
+    const [tienGio, setTienGio] = React.useState(0);
+    const [tongTien, setTongTien] = React.useState(0);
+    const [tienKhachDua, setTienKhachDua] = React.useState(0);
+    const [tienThoiLai, setTienThoiLai] = React.useState(0);
 
     const handleDeleteMon = (tableId, idItem) => {
         // Xem index xoá là item nào trong menuItemList rồi xóa bằng splice(index, 1)
@@ -114,10 +76,43 @@ function TableItem({ route, navigation }) {
     };
 
     const handleAddMon = () => {
-        console.log('Button pressed!');
-        navigation.navigate('ChonMon', {
-            tableId,
-            title,
+        // Cập nhật lại số lượng Món trong bàn
+        // setMenuItemList phải nằm trong bất đồng bộ để chạy sau
+        getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
+            let idItemRandom = uuid.v4();
+            for (var i = 0; i < infoTable.length; i++) {
+                // Tìm đúng bàn
+                if (infoTable[i].tableID == tableId) {
+                    infoTable[i].infoMenu.push({
+                        idItem: idItemRandom,
+                        Mon: '',
+                        Gia: '',
+                        SoLuong: '',
+                        ThanhTien: 0,
+                    });
+                }
+            }
+            console.log('infoTable sau khi thêm món: ', infoTable);
+            storeObjectValue(KEY_TABLE_ITEM, infoTable);
+
+            // Thêm món vào menuItemList và render lại
+            setMenuItemList((menuItemList) => {
+                const newMenuItemList = [...menuItemList];
+
+                newMenuItemList.push(
+                    <MenuItem
+                        props={{
+                            showText: 'none',
+                            idItem: idItemRandom,
+                            tableId: tableId,
+                            handleDeleteMon: handleDeleteMon,
+                            setTienMenu: setTienMenu,
+                            setTongTien: setTongTien,
+                        }}
+                    />,
+                );
+                return newMenuItemList;
+            });
         });
     };
 
@@ -330,7 +325,7 @@ function TableItem({ route, navigation }) {
      *      TH2.2.1: nếu không có menu món, tạo món đầu tiên render
      *      TH2.2.2: nếu có menu món, tìm đúng idItem món và render
      */
-    useEffect(() => {
+    React.useEffect(() => {
         getDataObject(KEY_TABLE_ITEM).then((infoTable) => {
             console.log('infoTable: ', typeof infoTable, infoTable);
             let menuItemListData;
@@ -480,14 +475,14 @@ function TableItem({ route, navigation }) {
     }, []);
 
     // Update lại tên title khi click vào từng bàn
-    useEffect(() => {
+    React.useEffect(() => {
         if (route.params?.title) {
             navigation.setOptions({ title: title });
         }
     }, [route.params?.title]);
 
     //Thêm món
-    useEffect(() => {
+    React.useEffect(() => {
         navigation.setOptions({
             headerRight: () => (
                 <Pressable
@@ -505,7 +500,7 @@ function TableItem({ route, navigation }) {
                             color: 'white',
                         }}
                     >
-                        Chọn Món
+                        Thêm
                     </Text>
                 </Pressable>
             ),
@@ -513,7 +508,7 @@ function TableItem({ route, navigation }) {
     }, [navigation]);
 
     // Tính lại tiền thừa khi có tiền khách đưa mỗi khi tổng tiền thay đổi
-    useEffect(() => {
+    React.useEffect(() => {
         if (tienKhachDua > 0) {
             setTienThoiLai(tienKhachDua - tongTien);
         }
@@ -525,21 +520,14 @@ function TableItem({ route, navigation }) {
             https://stackoverflow.com/questions/67623952/error-virtualizedlists-should-never-be-nested-inside-plain-scrollviews-with-th */}
             <ScrollView nestedScrollEnabled={true} style={{ marginHorizontal: 8 }}>
                 <View>
-                    {/* <ScrollView horizontal={true} style={{ width: '100%' }}> */}
-                    <ScrollView>
-                        {/* <FlatList
+                    <ScrollView horizontal={true} style={{ width: '100%' }}>
+                        <FlatList
                             data={menuItemList}
                             keyExtractor={(item, index) => `${index}`}
                             renderItem={({ item }) => {
                                 console.log('len menuItemList', menuItemList.length);
                                 console.log('render item', item.props.props.idItem);
                                 return item;
-                            }}
-                        /> */}
-                        <RenderMon
-                            props={{
-                                tableId,
-                                title,
                             }}
                         />
                     </ScrollView>

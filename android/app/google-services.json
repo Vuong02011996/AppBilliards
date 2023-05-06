@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "150970911204",
+    "project_id": "appbida-9c820",
+    "storage_bucket": "appbida-9c820.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:150970911204:android:7151662df089544b99dff1",
+        "android_client_info": {
+          "package_name": "com.appbilliards"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "150970911204-t1164re2gerdjijn9mspdr19t603hr94.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfw_-lRr-VNnYxa5iw7Po3BsIKTpF7I9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "150970911204-t1164re2gerdjijn9mspdr19t603hr94.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

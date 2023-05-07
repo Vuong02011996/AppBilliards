@@ -43,13 +43,6 @@
 
 # Chi tiết
 
--   Khi bấm vô từng bàn sẽ load dữ liệu danh sách bàn trên firebase , kiểm tra có bàn với tableId chưa
-
-    -   Nếu chưa có thì add document với dữ liệu rỗng và trạng thái chưa hoạt động.
-    -   Nếu có rồi
-        -   Nếu trang thái đang chơi thì load dữ liệu đang hoạt động ra.(gồm món ăn tiền giờ, ...)
-        -   Nếu trạng thái chưa chơi thì...
-
 -   Component
     -   Render Mon:
         -   Load danh sách món của bàn trên firebase(realtime)
@@ -62,3 +55,18 @@
 
 -   Tạo hóa đơn để in
 -   In để cắt đầy đủ thông tin hóa đơn.
+
+# Fix bug hoàn thiện :
+
+-   Cho thay đổi giá , số lượng tạm thời ở mỗi bàn (chỉ không update lại giá trên DB món) vẫn lưu để báo cáo.
+-   Thêm button xóa món, Căn chỉnh hóa đơn.
+
+-   Tạo hóa đơn in bài bản
+
+-   Sửa màn hình tạo món.
+-   Sửa màn hình chính.
+-   Làm sơ màn hình báo cáo.
+
+-   Chức năng lọc ở màn hình chọn món.
+
+-   Tạo file apk.

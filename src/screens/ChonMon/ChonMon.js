@@ -156,14 +156,14 @@ function ChonMon({ route, navigation }) {
                 {tatCaMon.map((food) => (
                     <View key={food.id} style={styles.row_item}>
                         <Text style={styles.column_name}>{food.TenMon}</Text>
-                        {/* <Text style={styles.column_price}>{food.Gia}</Text> */}
-                        <TextInput
+                        <Text style={styles.column_price}>{food.Gia}</Text>
+                        {/* <TextInput
                             style={styles.column_price}
                             keyboardType={'numeric'}
                             defaultValue={food.Gia}
                             autoFocus={false}
                             onChangeText={(newInputData) => handleThayDoiGia(food.id, newInputData)}
-                        />
+                        /> */}
                         <Text style={styles.column_price}>{food.Loai}</Text>
                         <TouchableOpacity style={styles.column_select} onPress={() => handleThemMon(food)}>
                             <Text style={styles.text_button}>Thêm</Text>
@@ -172,13 +172,6 @@ function ChonMon({ route, navigation }) {
                             <Text style={styles.text_button}>Bớt</Text>
                         </TouchableOpacity>
                         <Text style={styles.column_select}>{soLuong[food.id]}</Text>
-                        {/* <TextInput
-                            style={styles.column_price}
-                            keyboardType={'numeric'}
-                            value={soLuong[food.id]}
-                            autoFocus={false}
-                            onChangeText={(newInputData) => handleThayDoiSoLuong(food.id, newInputData)}
-                        /> */}
                     </View>
                 ))}
             </View>

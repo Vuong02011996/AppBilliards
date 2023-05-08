@@ -19,3 +19,27 @@ export function tinhTienMenu(data) {
     }
     return tongTien;
 }
+
+export const updateMonDB = (food_id, field_data, data) => {
+    firestore()
+        .collection('Danh sach mon')
+        .doc(food_id)
+        .update({
+            [field_data]: data,
+        })
+        .then(() => {
+            console.log('Mon updated!');
+        });
+};
+
+export const updateMonBanDB = (title, data) => {
+    firestore()
+        .collection('Danh sach ban')
+        .doc(title)
+        .update({
+            mon: data,
+        })
+        .then(() => {
+            console.log('Mon updated!');
+        });
+};

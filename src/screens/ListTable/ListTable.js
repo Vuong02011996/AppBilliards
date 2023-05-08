@@ -91,6 +91,7 @@ export default function ListTable({ navigation }) {
             { id: 5, name: 'Bàn 5' },
             { id: 6, name: 'Bàn 6' },
             { id: 7, name: 'Bàn 7' },
+            { id: 8, name: 'Bàn 8' },
         ],
     };
 
@@ -106,10 +107,11 @@ export default function ListTable({ navigation }) {
             <FlatList
                 data={categories}
                 // horizontal={false}
-                // numColumns={2}
+                numColumns={2}
                 renderItem={({ item }) => {
                     return (
                         <TableComponent
+                            style={styles.table_item}
                             table={item}
                             onPress={() => {
                                 navigation.navigate('TableItem', {
@@ -121,7 +123,7 @@ export default function ListTable({ navigation }) {
                     );
                 }}
                 keyExtractor={(item) => `${item.id}`}
-                contentContainerStyle={{ paddingLeft: 8, paddingRight: 8 }}
+                contentContainerStyle={{ paddingLeft: 8, paddingRight: 0 }}
             />
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.button} onPress={handlePress}>

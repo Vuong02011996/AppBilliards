@@ -20,15 +20,21 @@ import TcpSocket from 'react-native-tcp-socket';
 import React, {useEffect, useState} from 'react';
 import moment from 'moment';
 import {deburr} from 'lodash';
+import unidecode from 'unidecode';
 
-import {updateBanDB, tinhTienMenu} from '../../utils/command';
+import {
+  updateBanDB,
+  tinhTienMenu,
+  convertMinutesToTimeString,
+  readFieldDataDB,
+} from '../../utils/command';
 
 function TableItem({route, navigation}) {
   // Danh sách chứa các Món(component MenuItem) để render
   const [menuItems, setMenuItems] = useState([]);
   const [tienMenu, setTienMenu] = useState(0);
   const [gioVao, setGioVao] = useState('Chưa đặt');
-  const [gioNghi, setGioNghi] = useState('Chưa bấm');
+  const [gioNghi, setGioNghi] = useState('Chưa thanh toán');
   const [thoiGianChoi, setThoiGianChoi] = useState(0);
   const [tienGioMoiPhut, setTienGioMoiPhut] = useState(420);
   const [tienGio, setTienGio] = useState(0);
@@ -72,7 +78,7 @@ function TableItem({route, navigation}) {
             .set({
               id_ban: title,
               gioVao: 'Chưa đặt',
-              gioNghi: 'Chưa bấm',
+              gioNghi: 'Chưa thanh toán',
               thoiGianChoi: 0,
               tienGio: 0,
               tienMenu: 0,
@@ -132,10 +138,15 @@ function TableItem({route, navigation}) {
       .onSnapshot(documentSnapshot => {
         const data_table = documentSnapshot.data();
         const list_mon_cua_ban = data_table?.mon;
+
         if (list_mon_cua_ban) {
           setMenuItems(list_mon_cua_ban);
           const menuMoney = tinhTienMenu(list_mon_cua_ban);
+          const totalMoney = data_table.tienGio + menuMoney;
           setTienMenu(menuMoney);
+          console.log('tienGio: ', tienGio);
+          console.log('menuMoney: ', menuMoney);
+          setTongTien(totalMoney);
         }
       });
 
@@ -149,33 +160,28 @@ function TableItem({route, navigation}) {
     // Xem index xoá là item nào trong menuItemList rồi xóa bằng splice(index, 1)
   };
 
-  async function readFieldDataDB(collection, document, field_data) {
-    try {
-      const docRef = firestore().collection(collection).doc(document);
-      const docSnapshot = await docRef.get();
-      if (docSnapshot.exists) {
-        const data = docSnapshot.data();
-        const value = data[field_data];
-        console.log('value: ', value);
-
-        return value;
-      } else {
-        console.log('Document does not exist!');
-        return null;
-      }
-    } catch (error) {
-      console.error(error);
-      return null;
-    }
-  }
-
   // Khi bấm đặt giờ vào update giờ vào vào danh sách bàn , tìm đúng bàn theo title.
   const handelDatGioVao = () => {
     function handleThayDoiGio() {
       const currTime = new Date().toLocaleString();
-      updateBanDB(title, 'gioVao', currTime);
+      firestore()
+        .collection('Danh sach ban')
+        .doc(title)
+        .update({
+          gioVao: currTime,
+          gioNghi: 'Chưa thanh toán',
+          thoiGianChoi: 0,
+          tienGio: 0,
+          tongTien: tienMenu,
+        })
+        .then(() => {
+          console.log('Updated bấm giờ vào!');
+        });
       setGioVao(currTime);
-      setGioNghi('Chưa bấm');
+      setGioNghi('Chưa thanh toán');
+      setThoiGianChoi(0);
+      setTienGio(0);
+      setTongTien(tienMenu);
     }
     if (gioVao != 'Chưa đặt') {
       Alert.alert(
@@ -213,10 +219,6 @@ function TableItem({route, navigation}) {
       if (valueGioVao != 'Chưa đặt') {
         const timeClose = moment(currTime, 'HH:mm:ss, DD/MM/YYYY').valueOf();
         const timeStart = moment(valueGioVao, 'HH:mm:ss, DD/MM/YYYY').valueOf();
-
-        console.log('currTime: ', currTime);
-        console.log('timeClose: ', timeClose);
-        console.log('timeStart: ', timeStart);
         let intervalTimeCost = timeClose - timeStart;
         if (intervalTimeCost > 0) {
           intervalTimeCost = Math.round(intervalTimeCost / 1000 / 60);
@@ -224,6 +226,7 @@ function TableItem({route, navigation}) {
             (intervalTimeCost * tienGioMoiPhut) / 1000,
           );
           const totalMoney = moneyTime + tienMenu;
+
           firestore()
             .collection('Danh sach ban')
             .doc(title)
@@ -253,7 +256,7 @@ function TableItem({route, navigation}) {
         );
       }
     }
-    if (gioNghi != 'Chưa bấm') {
+    if (gioNghi != 'Chưa thanh toán') {
       Alert.alert(
         'Thay đổi giờ nghỉ sẽ thay đổi hóa đơn',
         'Bạn có chắc chắn muốn thay đổi?',
@@ -276,23 +279,29 @@ function TableItem({route, navigation}) {
 
   // Thay đổi tiền giờ mỗi phút
   // Tính toán lại tiền giờ và tổng tiền
-  const handelChangeTienMoiPhut = newTienGioMoiPhut => {
-    const valueGioVao = readFieldDataDB('Danh sach ban', title, 'gioVao');
-    const valueGioNghi = readFieldDataDB('Danh sach ban', title, 'gioNghi');
-    const valueThoiGianChoi = readFieldDataDB(
+  async function handelChangeTienMoiPhut(newTienGioMoiPhut) {
+    const valueGioVao = await readFieldDataDB('Danh sach ban', title, 'gioVao');
+    const valueGioNghi = await readFieldDataDB(
       'Danh sach ban',
       title,
       'gioNghi',
     );
+    const valueThoiGianChoi = await readFieldDataDB(
+      'Danh sach ban',
+      title,
+      'thoiGianChoi',
+    );
 
     if (valueGioVao !== 'Chưa đặt' && valueGioNghi !== 'Chưa đặt') {
-      const moneyTime = (valueThoiGianChoi * newTienGioMoiPhut) / 1000;
+      const moneyTime = Math.ceil(
+        (valueThoiGianChoi * newTienGioMoiPhut) / 1000,
+      );
       const totalMoney = moneyTime + tienMenu;
       setTienGio(moneyTime);
       setTongTien(totalMoney);
     }
     setTienGioMoiPhut(newTienGioMoiPhut);
-  };
+  }
 
   // Handle đặt lại
   // Update lại document của bàn hiện tại vói tất cả thông tin reset
@@ -303,7 +312,7 @@ function TableItem({route, navigation}) {
         .doc(title)
         .update({
           gioVao: 'Chưa đặt',
-          gioNghi: 'Chưa bấm',
+          gioNghi: 'Chưa thanh toán',
           thoiGianChoi: 0,
           tienGio: 0,
           tienMenu: 0,
@@ -317,7 +326,7 @@ function TableItem({route, navigation}) {
 
       setTienMenu(0);
       setGioVao('Chưa đặt');
-      setGioNghi('Chưa bấm');
+      setGioNghi('Chưa thanh toán');
       setThoiGianChoi(0);
       setTienGio(0);
       setTongTien(0);
@@ -357,8 +366,8 @@ function TableItem({route, navigation}) {
   };
 
   const convertTV = string => {
-    const newStr = deburr(string);
-    // console.log('newStr: ', newStr);
+    let newStr = deburr(string);
+    console.log('newStr: ', newStr);
     return newStr;
   };
 
@@ -367,28 +376,39 @@ function TableItem({route, navigation}) {
 
   const getData = () => {
     console.log('menuItems: ', menuItems);
+    const thoiGianChoiConvert = convertMinutesToTimeString(thoiGianChoi);
+    let gioVaoConvert = '';
+    let gioNghiConvert = '';
+    if (gioVao === 'Chưa đặt') {
+      gioVaoConvert = '';
+    }
+    if (gioNghi === 'Chưa bấm') {
+      gioNghiConvert = '';
+    }
+    let tenMon;
 
     const data = `
-          ---------------------------
-                    BIDA HVK
+          ---------------------------------
+          \x1B\x45\x01          BIDA HVK\x1B\x45\x00
           Tinh Phong, Son Tinh, Quang Ngai
-          ---------------------------
+          ---------------------------------
               PHIEU THANH TOAN
               Ban: ${tableId}
 
           Mat hang: 
-          ---------------------------
-          Ten     SoLuong   Gia   ThanhTien
+          ---------------------------------
+          Ten      SoLuong   Gia   ThanhTien
           ${menuItems
             .map((item, index) => {
-              let tenMon = convertTV(item.TenMon);
-              tenMon = tenMon.padEnd(10, ' ');
+              tenMon = unidecode(item.TenMon);
+              tenMon = tenMon.padEnd(13, ' ');
+
               let soLuong = item.soLuong;
               soLuong = soLuong.toString().padEnd(2, ' ');
+
               let gia = item.Gia;
               gia = gia.toString().padEnd(4, ' ');
               let thanh_tien = soLuong * gia;
-              // thanh_tien = thanh_tien.map(str => str.padEnd(10, ' '));
 
               if (index === 0) {
                 return `${tenMon}${soLuong}     ${gia}   ${thanh_tien} 000d\n`;
@@ -398,16 +418,18 @@ function TableItem({route, navigation}) {
             })
             .join('')}
           Tien menu:    ${tienMenu} 000d
-          ---------------------------
+          ---------------------------------
 
-          Thoi gian vao: ${gioVao}
-          Thoi gian ra: ${gioNghi}
-          Thoi gian choi:   ${thoiGianChoi} phut
-          Tien gio:   ${tienGio} 000d   (${Math.round(tienGioMoiPhut * 60)}/Gio)
+          Thoi gian vao: ${gioVaoConvert}
+          Thoi gian ra: ${gioNghiConvert}
+          Thoi gian choi:   ${thoiGianChoiConvert}
 
-          TONG CONG:  ${tongTien} 000d
+          Tien gio:  ${tienGio} 000d   (${Math.round(tienGioMoiPhut * 60)}d/Gio)
+
+          \x1B\x45\x01TONG CONG:  ${tongTien} 000d\x1B\x45\x00
           Cam on quy khach! Hen gap lai!
-          --------------------------
+          ---------------------------------
+          
 
 
 
@@ -438,7 +460,7 @@ function TableItem({route, navigation}) {
     };
 
     const data = getData();
-    console.log('data:', data);
+    // console.log('data:', data);
 
     const client = TcpSocket.createConnection(options, () => {
       // Write on the socket
@@ -544,7 +566,7 @@ function TableItem({route, navigation}) {
               <Text style={[styles.textTongTienThucDon, {minWidth: 246}]}>
                 Tổng tiền thực đơn:
               </Text>
-              <Text style={styles.textTongTienThucDon}>{tienMenu}K</Text>
+              <Text style={styles.textTongTienThucDon}>{tienMenu} 000đ</Text>
             </View>
             {/* Giờ vào */}
             <View
@@ -592,7 +614,7 @@ function TableItem({route, navigation}) {
                     fontSize: 16,
                     color: 'white',
                   }}>
-                  Bấm giờ nghỉ
+                  Thanh toán
                 </Text>
               </Pressable>
             </View>
@@ -600,20 +622,39 @@ function TableItem({route, navigation}) {
               <Text style={[styles.textThoiGianChoi, {minWidth: 246}]}>
                 Thời gian chơi:{' '}
               </Text>
-              <Text style={styles.textThoiGianChoi}>{thoiGianChoi} phút</Text>
+              <Text style={styles.textThoiGianChoi}>
+                {convertMinutesToTimeString(thoiGianChoi)}
+              </Text>
             </View>
             <View style={{flexDirection: 'row'}}>
               <Text style={[styles.textTongTien, {minWidth: 246}]}>
                 Tiền Giờ:
               </Text>
-              <Text style={styles.textTongTien}>{tienGio}K</Text>
+              <Text style={styles.textTongTien}>{tienGio} 000đ</Text>
             </View>
+            {/* Giảm giá */}
+            {/* <View style={{flexDirection: 'row'}}>
+              <Text style={[styles.textGiamGia, {minWidth: 100}]}>
+                Giảm giá:
+              </Text>
+              <TextInput
+                style={styles.textInputTienKhachDua}
+                keyboardType="numeric"
+                onChangeText={handelInputGiamGia}>
+                {tienKhachDua}
+              </TextInput>
+              <TouchableOpacity
+                style={{backgroundColor: 'blue', padding: 10}}
+                onPress={handleButtonGiamGia}>
+                <Text style={{color: 'white'}}>Lưu</Text>
+              </TouchableOpacity>
+            </View> */}
             <Text
               style={[
                 styles.textTongTien,
                 {color: '#000', marginVertical: 4, fontSize: 20},
               ]}>
-              Tổng tiền thanh toán: {tongTien}K
+              Tổng tiền thanh toán: {tongTien} 000đ
             </Text>
             <View style={{flexDirection: 'row'}}>
               <Text
@@ -634,7 +675,7 @@ function TableItem({route, navigation}) {
                   styles.textThoiGianChoi,
                   {minWidth: 246, color: '#000', fontWeight: '500'},
                 ]}>
-                K
+                000đ
               </Text>
             </View>
             <View style={{flexDirection: 'row'}}>
@@ -650,7 +691,7 @@ function TableItem({route, navigation}) {
                   styles.textThoiGianChoi,
                   {minWidth: 246, color: '#000', fontWeight: '500'},
                 ]}>
-                {tienThoiLai}K
+                {tienThoiLai} 000đ
               </Text>
             </View>
 
@@ -751,6 +792,11 @@ function TableItem({route, navigation}) {
             style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
             onPress={handleSave}>
             <Text style={{color: 'white'}}>Lưu</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
+            onPress={handleSave}>
+            <Text style={{color: 'white'}}>Quay lại</Text>
           </TouchableOpacity>
         </View>
       </Modal>

@@ -8,22 +8,19 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  Dimensions,
 } from 'react-native';
-import {updateMonDB, updateMonBanDB} from '../../utils/command';
 
-function ChonMon({route, navigation}) {
+function ListMon({route, navigation}) {
   const [tatCaMon, setTatCaMon] = useState([]);
   const [monNuoc, setMonNuoc] = useState([]);
   const [bia, setBia] = useState([]);
   const [doAn, setDoAn] = useState([]);
   const [thuoc, setThuoc] = useState([]);
-
   const [filterMon, setFilterMon] = useState([]);
-  const [monDuocChon, setMonDuocChon] = useState([]);
-  const [soLuong, setSoLuong] = useState({});
   const [selectedType, setSelectedType] = useState('Tất cả');
 
-  const {tableId, title} = route.params;
+  //   const {tableId, title} = route.params;
 
   // Load danh sách tất cả món
   useEffect(() => {
@@ -69,106 +66,6 @@ function ChonMon({route, navigation}) {
   }, []);
 
   // Load danh sách món của bàn (có số lương) nếu đã chọn trước đó.
-  useEffect(() => {
-    firestore()
-      .collection('Danh sach ban')
-      .doc(title)
-      .get()
-      .then(documentSnapshot => {
-        if (documentSnapshot.exists) {
-          // console.log('Dữ liệu của bàn: ', documentSnapshot.data());
-          const data_table = documentSnapshot.data();
-          const list_mon_cua_ban = data_table?.mon;
-          if (list_mon_cua_ban) {
-            console.log('Mon cua ban', list_mon_cua_ban);
-            setMonDuocChon(list_mon_cua_ban);
-            const soLuongInit = {};
-            list_mon_cua_ban.forEach(mon => {
-              // set số lượng ban đầu bằng 0 cho mỗi món
-              soLuongInit[mon.id] = mon.soLuong;
-            });
-            // console.log('soLuong truoc khi lây từ dữ liệu db: ', soLuong);
-
-            setSoLuong(soLuongInit);
-          }
-        }
-      });
-  }, [title]);
-
-  const handleThemMon = food => {
-    const index = monDuocChon.findIndex(
-      selectedFood => selectedFood.id === food.id,
-    );
-    if (index === -1) {
-      // Món chưa có trong danh sách monDuocChon, thêm vào DB update số lượng
-      food.soLuong = 1;
-      updateMonBanDB(title, [...monDuocChon, food]);
-      setMonDuocChon([...monDuocChon, food]);
-      setSoLuong({
-        ...soLuong,
-        [food.id]: 1,
-      });
-    } else {
-      // Món đã có trong danh sách monDuocChon
-      const newSelectedFoods = [...monDuocChon];
-      newSelectedFoods[index] = {
-        ...newSelectedFoods[index],
-        soLuong: newSelectedFoods[index].soLuong + 1,
-      };
-      updateMonBanDB(title, newSelectedFoods);
-      setMonDuocChon(newSelectedFoods);
-      setSoLuong({
-        ...soLuong,
-        [food.id]: soLuong[food.id] + 1,
-      });
-    }
-  };
-
-  const handleBoMon = food => {
-    const index = monDuocChon.findIndex(
-      selectedFood => selectedFood.id === food.id,
-    );
-    if (index === -1) {
-      // Món không có trong danh sách monDuocChon, không giảm số lượng
-      return;
-    } else if (monDuocChon[index].soLuong === 1) {
-      // Món có trong danh sách monDuocChon và số lượng bằng 1, remove khỏi danh sách
-      const newSelectedFoods = monDuocChon.filter(
-        selectedFood => selectedFood.id !== food.id,
-      );
-      updateMonBanDB(title, newSelectedFoods);
-      setMonDuocChon(newSelectedFoods);
-    } else {
-      // Món có trong danh sách monDuocChon và số lượng lớn hơn 1, chỉ giảm số lượng
-      const newSelectedFoods = [...monDuocChon];
-      newSelectedFoods[index] = {
-        ...newSelectedFoods[index],
-        soLuong: newSelectedFoods[index].soLuong - 1,
-      };
-      updateMonBanDB(title, newSelectedFoods);
-      setMonDuocChon(newSelectedFoods);
-    }
-    setSoLuong({
-      ...soLuong,
-      [food.id]: soLuong[food.id] - 1,
-    });
-  };
-
-  const handleThayDoiGia = (food_id, value) => {
-    console.log('food_id, value: ', food_id, value);
-    updateMonDB(food_id, 'Gia', value);
-    // update lai gia cua món được chọn
-    const index = monDuocChon.findIndex(
-      selectedFood => selectedFood.id === food_id,
-    );
-    const newSelectedFoods = [...monDuocChon];
-    newSelectedFoods[index] = {...newSelectedFoods[index], Gia: value};
-    updateMonBanDB(title, newSelectedFoods);
-    setMonDuocChon(newSelectedFoods);
-  };
-  const handleThayDoiSoLuong = (food_id, value) => {
-    console.log('food_id, value: ', food_id, value);
-  };
 
   const chonTatCa = () => {
     setFilterMon(tatCaMon);
@@ -232,28 +129,14 @@ function ChonMon({route, navigation}) {
         <Text style={styles.column_name}>Tên Món</Text>
         <Text style={styles.column_price}>Đơn Giá</Text>
         <Text style={styles.column_price}>Loại</Text>
-        <Text style={styles.column_select}>Thêm</Text>
-        <Text style={styles.column_select}>Bớt</Text>
-        <Text style={styles.column_select}>Số lượng</Text>
       </View>
-      <ScrollView style={{height: 700, width: '100%'}}>
+      <ScrollView style={{height: 300, width: '100%'}}>
         <View>
           {filterMon.map(food => (
             <View key={food.id} style={styles.row_item}>
               <Text style={styles.column_name}>{food.TenMon}</Text>
               <Text style={styles.column_price}>{food.Gia}</Text>
               <Text style={styles.column_price}>{food.Loai}</Text>
-              <TouchableOpacity
-                style={styles.column_select}
-                onPress={() => handleThemMon(food)}>
-                <Text style={styles.text_button}>Thêm</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.column_select}
-                onPress={() => handleBoMon(food)}>
-                <Text style={styles.text_button}>Bớt</Text>
-              </TouchableOpacity>
-              <Text style={styles.column_select}>{soLuong[food.id]}</Text>
             </View>
           ))}
         </View>
@@ -262,7 +145,7 @@ function ChonMon({route, navigation}) {
   );
 }
 
-export default ChonMon;
+export default ListMon;
 
 const styles = StyleSheet.create({
   container: {

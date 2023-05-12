@@ -60,6 +60,7 @@ function TableItem({route, navigation}) {
         if (documentSnapshot.exists) {
           // Nếu bàn đã tạo trên DB load dữ liệu đang có của bàn
           const tableData = documentSnapshot.data();
+          // console.log('table Data: ', tableData);
           setGioVao(tableData.gioVao);
           setGioNghi(tableData.gioNghi);
           setThoiGianChoi(tableData.thoiGianChoi);
@@ -287,9 +288,9 @@ function TableItem({route, navigation}) {
   const handelInputGiamGia = value => {
     if (tienGio > 0) {
       const tienGioGiamGia = Math.ceil(tienGio - (tienGio * value) / 100);
-      setGiamGia(value);
       setTienGioConLai(tienGioGiamGia);
     }
+    setGiamGia(value);
   };
   const handleButtonGiamGia = () => {
     if (tienGio > 0) {
@@ -378,7 +379,6 @@ function TableItem({route, navigation}) {
       handleDatLaiHoaDon();
     }
   };
-
   // handle thối lại tiên
   const handelThoiTien = newTienKhachDua => {
     if (newTienKhachDua > 0) {
@@ -399,6 +399,7 @@ function TableItem({route, navigation}) {
       interface: 'wifi',
     };
 
+    console.log('giamGia: ', giamGia);
     const data = getData(
       gioVao,
       gioNghi,
@@ -438,12 +439,14 @@ function TableItem({route, navigation}) {
 
   // Chỉnh sửa giá và số lượng
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editedPrice, setEditedPrice] = useState('');
   const [editedQuantity, setEditedQuantity] = useState('');
 
-  const handleEdit = item => {
+  const handleEdit = (item, index) => {
     setSelectedItem(item);
+    setSelectedItemIndex(index);
     setModalVisible(true);
     setEditedPrice(item.Gia.toString());
     setEditedQuantity(item.soLuong.toString());
@@ -456,15 +459,48 @@ function TableItem({route, navigation}) {
       Gia: parseFloat(editedPrice),
       soLuong: parseInt(editedQuantity),
     };
+    // console.log('selectedItemIndex: ', selectedItemIndex);
+    // console.log('updatedItem: ', updatedItem);
+    // console.log('menuItems: ', menuItems);
+    const newMenuItems = [...menuItems];
+    // Cập nhật phần tử trong mảng mới
+    newMenuItems[selectedItemIndex] = updatedItem;
+
+    firestore()
+      .collection('Danh sach ban')
+      .doc(title)
+      .update({
+        mon: newMenuItems,
+      })
+      .then(() => {
+        console.log('User updated!');
+      });
     // Thực hiện các xử lý khác tại đây, ví dụ như gửi request lưu thông tin
+    setSelectedItem(null);
+    setModalVisible(false);
+    setMenuItems(newMenuItems);
+  };
+  const handleXoaMon = () => {
+    firestore()
+      .collection('Danh sach ban')
+      .doc(title)
+      .update({
+        mon: firestore.FieldValue.arrayRemove(selectedItem),
+      })
+      .then(() => {
+        // Alert.alert('Đã xóa món Hãy bấm quay lại ');
+      })
+      .catch(error => {
+        // Alert.alert('Lỗi khi xóa món ');
+      });
     setSelectedItem(null);
     setModalVisible(false);
   };
 
-  const renderItem = ({item}) => {
+  const renderItem = ({item, index}) => {
     const totalPrice = item.Gia * item.soLuong;
     return (
-      <TouchableOpacity onPress={() => handleEdit(item)}>
+      <TouchableOpacity onPress={() => handleEdit(item, index)}>
         <View
           style={{
             flexDirection: 'row',
@@ -721,29 +757,38 @@ function TableItem({route, navigation}) {
         <Modal
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}>
-          <View>
+          <View style={{margin: 10}}>
             <Text style={{fontSize: 20}}>{selectedItem?.TenMon}</Text>
-            <TextInput
-              style={{marginTop: 20, fontSize: 16}}
-              placeholder="Nhập giá"
-              value={editedPrice}
-              onChangeText={text => setEditedPrice(text)}
-            />
-            <TextInput
-              style={{marginTop: 10, fontSize: 16}}
-              placeholder="Nhập số lượng"
-              value={editedQuantity}
-              onChangeText={text => setEditedQuantity(text)}
-            />
-            <TouchableOpacity
-              style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
-              onPress={handleSave}>
-              <Text style={{color: 'white'}}>Lưu</Text>
+            <View style={styles.input_modal_container}>
+              <Text style={styles.text_modal}>Giá: </Text>
+              <TextInput
+                style={styles.input_modal}
+                keyboardType="numeric"
+                placeholder="Nhập giá"
+                value={editedPrice}
+                onChangeText={text => setEditedPrice(text)}
+              />
+            </View>
+            <View style={styles.input_modal_container}>
+              <Text style={styles.text_modal}>Số lượng: </Text>
+              <TextInput
+                style={styles.input_modal}
+                keyboardType="numeric"
+                placeholder="Nhập số lượng"
+                value={editedQuantity}
+                onChangeText={text => setEditedQuantity(text)}
+              />
+            </View>
+            <TouchableOpacity style={styles.button_modal} onPress={handleSave}>
+              <Text style={styles.text_button_modal}>Lưu</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
-              onPress={handleSave}>
-              <Text style={{color: 'white'}}>Quay lại</Text>
+              style={styles.button_modal}
+              onPress={handleXoaMon}>
+              <Text style={styles.text_button_modal}>Xóa</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button_modal} onPress={handleSave}>
+              <Text style={styles.text_button_modal}>Quay lại</Text>
             </TouchableOpacity>
           </View>
         </Modal>
@@ -864,6 +909,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     marginTop: 8,
+  },
+  // Modal
+  input_modal_container: {
+    flexDirection: 'row',
+    marginTop: 20,
+  },
+  text_modal: {marginRight: 20, width: 100},
+  input_modal: {
+    marginRight: 20,
+    fontSize: 16,
+    borderWidth: 1,
+    width: 100,
+    height: 40,
+  },
+  button_modal: {
+    marginTop: 20,
+    backgroundColor: 'blue',
+    padding: 1,
+    width: 150,
+    height: 50,
+  },
+  text_button_modal: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 
   // commond

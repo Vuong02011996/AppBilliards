@@ -67,7 +67,7 @@ function ChonMon({route, navigation}) {
         setSelectedType('all');
       });
     return unsubscribe;
-  }, []);
+  }, [title]);
 
   // Load danh sách món của bàn (có số lương) nếu đã chọn trước đó.
   useEffect(() => {
@@ -232,12 +232,12 @@ function ChonMon({route, navigation}) {
             <TouchableOpacity
               style={styles.column_select}
               onPress={() => handleThemMon(item)}>
-              <Text style={styles.text_button}>Thêm</Text>
+              <Text style={styles.text_button}>Tăng</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.column_select}
               onPress={() => handleBoMon(item)}>
-              <Text style={styles.text_button}>Bớt</Text>
+              <Text style={styles.text_button}>Giảm</Text>
             </TouchableOpacity>
             <Text style={styles.column_select}>{soLuong[item.id]}</Text>
           </View>
@@ -266,6 +266,7 @@ const styles = StyleSheet.create({
   column_tab: {
     marginHorizontal: 2,
     padding: 10,
+    borderRightWidth: 1,
   },
 
   row_item: {
@@ -285,7 +286,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     width: '100%',
-    fontWeight: 'bold',
   },
   column_name: {
     flex: 1,

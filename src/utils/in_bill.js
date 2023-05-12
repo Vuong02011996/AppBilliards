@@ -21,9 +21,13 @@ export const getData = (
   let gioNghiConvert = gioNghi;
   if (gioVao === 'Chưa đặt') {
     gioVaoConvert = '';
+  } else {
+    gioVaoConvert = convertDay(gioVaoConvert);
   }
   if (gioNghi === 'Chưa thanh toán') {
     gioNghiConvert = '';
+  } else {
+    gioNghiConvert = convertDay(gioNghiConvert);
   }
   let tenMon;
 
@@ -60,8 +64,8 @@ export const getData = (
           Tien menu:    ${tienMenu} 000d
           ---------------------------------
 
-          Thoi gian vao: ${convertDay(gioVaoConvert)}
-          Thoi gian ra: ${convertDay(gioNghiConvert)}
+          Thoi gian vao: ${gioVaoConvert}
+          Thoi gian ra: ${gioNghiConvert}
           Thoi gian choi:   ${thoiGianChoiConvert}
 
           Tien gio:  ${tienGio} 000d   (${Math.round(tienGioMoiPhut * 60)}d/Gio)

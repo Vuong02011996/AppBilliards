@@ -94,7 +94,17 @@ function ListMon({route, navigation}) {
     }
     return {};
   };
-
+  // Xóa món trong danh sách món.
+  const handleXoaMon = food => {
+    console.log('Food id!', food.id);
+    firestore()
+      .collection('Danh sach mon')
+      .doc(food.id)
+      .delete()
+      .then(() => {
+        console.log('Food deleted!');
+      });
+  };
   return (
     <View style={styles.container}>
       {/* add tabar ở đây */}
@@ -129,6 +139,7 @@ function ListMon({route, navigation}) {
         <Text style={styles.column_name}>Tên Món</Text>
         <Text style={styles.column_price}>Đơn Giá</Text>
         <Text style={styles.column_price}>Loại</Text>
+        <Text style={styles.column_price}>Xóa</Text>
       </View>
       <ScrollView style={{height: 300, width: '100%'}}>
         <View>
@@ -137,6 +148,11 @@ function ListMon({route, navigation}) {
               <Text style={styles.column_name}>{food.TenMon}</Text>
               <Text style={styles.column_price}>{food.Gia}</Text>
               <Text style={styles.column_price}>{food.Loai}</Text>
+              <TouchableOpacity
+                style={styles.column_select}
+                onPress={() => handleXoaMon(food)}>
+                <Text style={styles.text_button}>Xóa</Text>
+              </TouchableOpacity>
             </View>
           ))}
         </View>
@@ -164,6 +180,7 @@ const styles = StyleSheet.create({
   column_tab: {
     marginHorizontal: 2,
     padding: 10,
+    borderRightWidth: 1,
   },
 
   row_item: {

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
+  FlatList,
 } from 'react-native';
 import {updateMonDB, updateMonBanDB} from '../../utils/command';
 
@@ -80,7 +81,6 @@ function ChonMon({route, navigation}) {
           const data_table = documentSnapshot.data();
           const list_mon_cua_ban = data_table?.mon;
           if (list_mon_cua_ban) {
-            console.log('Mon cua ban', list_mon_cua_ban);
             setMonDuocChon(list_mon_cua_ban);
             const soLuongInit = {};
             list_mon_cua_ban.forEach(mon => {
@@ -153,23 +153,6 @@ function ChonMon({route, navigation}) {
       [food.id]: soLuong[food.id] - 1,
     });
   };
-
-  const handleThayDoiGia = (food_id, value) => {
-    console.log('food_id, value: ', food_id, value);
-    updateMonDB(food_id, 'Gia', value);
-    // update lai gia cua món được chọn
-    const index = monDuocChon.findIndex(
-      selectedFood => selectedFood.id === food_id,
-    );
-    const newSelectedFoods = [...monDuocChon];
-    newSelectedFoods[index] = {...newSelectedFoods[index], Gia: value};
-    updateMonBanDB(title, newSelectedFoods);
-    setMonDuocChon(newSelectedFoods);
-  };
-  const handleThayDoiSoLuong = (food_id, value) => {
-    console.log('food_id, value: ', food_id, value);
-  };
-
   const chonTatCa = () => {
     setFilterMon(tatCaMon);
     setSelectedType('all');
@@ -236,28 +219,30 @@ function ChonMon({route, navigation}) {
         <Text style={styles.column_select}>Bớt</Text>
         <Text style={styles.column_select}>Số lượng</Text>
       </View>
-      <ScrollView style={{height: 700, width: '100%'}}>
-        <View>
-          {filterMon.map(food => (
-            <View key={food.id} style={styles.row_item}>
-              <Text style={styles.column_name}>{food.TenMon}</Text>
-              <Text style={styles.column_price}>{food.Gia}</Text>
-              <Text style={styles.column_price}>{food.Loai}</Text>
-              <TouchableOpacity
-                style={styles.column_select}
-                onPress={() => handleThemMon(food)}>
-                <Text style={styles.text_button}>Thêm</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.column_select}
-                onPress={() => handleBoMon(food)}>
-                <Text style={styles.text_button}>Bớt</Text>
-              </TouchableOpacity>
-              <Text style={styles.column_select}>{soLuong[food.id]}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      {/* Render danh sách món */}
+      <FlatList
+        style={{height: 700, width: '100%', marginBottom: 50}}
+        data={filterMon}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({item}) => (
+          <View key={item.id} style={styles.row_item}>
+            <Text style={styles.column_name}>{item.TenMon}</Text>
+            <Text style={styles.column_price}>{item.Gia}</Text>
+            <Text style={styles.column_price}>{item.Loai}</Text>
+            <TouchableOpacity
+              style={styles.column_select}
+              onPress={() => handleThemMon(item)}>
+              <Text style={styles.text_button}>Thêm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.column_select}
+              onPress={() => handleBoMon(item)}>
+              <Text style={styles.text_button}>Bớt</Text>
+            </TouchableOpacity>
+            <Text style={styles.column_select}>{soLuong[item.id]}</Text>
+          </View>
+        )}
+      />
     </View>
   );
 }

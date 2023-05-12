@@ -175,13 +175,10 @@ function TableItem({route, navigation}) {
             // Tính tổng tiền (tiền giờ + tiền menu)
             // SetState lại: setGioNghi, setThoiGianChoi,setTienGio, setTongTien,
             if (infoTable[i].gioVao != 'Chưa đặt') {
-              const timeClose = moment(
-                currTime,
-                'HH:mm:ss, DD/MM/YYYY',
-              ).valueOf();
+              const timeClose = moment(currTime, 'HH:mm, DD/MM/YYYY').valueOf();
               const timeStart = moment(
                 infoTable[i].gioVao,
-                'HH:mm:ss, DD/MM/YYYY',
+                'HH:mm, DD/MM/YYYY',
               ).valueOf();
               let intervalTimeCost = timeClose - timeStart;
               if (intervalTimeCost > 0) {

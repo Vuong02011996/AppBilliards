@@ -19,11 +19,9 @@ import firestore from '@react-native-firebase/firestore';
 import TcpSocket from 'react-native-tcp-socket';
 import React, {useEffect, useState} from 'react';
 import moment from 'moment';
-import {deburr} from 'lodash';
-import unidecode from 'unidecode';
+import {getData} from '../../utils/in_bill';
 
 import {
-  updateBanDB,
   tinhTienMenu,
   convertMinutesToTimeString,
   readFieldDataDB,
@@ -33,11 +31,16 @@ function TableItem({route, navigation}) {
   // Danh sách chứa các Món(component MenuItem) để render
   const [menuItems, setMenuItems] = useState([]);
   const [tienMenu, setTienMenu] = useState(0);
+
   const [gioVao, setGioVao] = useState('Chưa đặt');
   const [gioNghi, setGioNghi] = useState('Chưa thanh toán');
   const [thoiGianChoi, setThoiGianChoi] = useState(0);
-  const [tienGioMoiPhut, setTienGioMoiPhut] = useState(420);
+  const [tienGioMoiPhut, setTienGioMoiPhut] = useState(600);
+
   const [tienGio, setTienGio] = useState(0);
+  const [giamGia, setGiamGia] = useState(30);
+  const [tienGioConLai, setTienGioConLai] = useState(0);
+
   const [tongTien, setTongTien] = useState(0);
   const [tienKhachDua, setTienKhachDua] = useState(0);
   const [tienThoiLai, setTienThoiLai] = useState(0);
@@ -61,6 +64,7 @@ function TableItem({route, navigation}) {
           setGioNghi(tableData.gioNghi);
           setThoiGianChoi(tableData.thoiGianChoi);
           setTienGio(tableData.tienGio);
+          setTienGioConLai(tableData.tienGioConLai);
           setTongTien(tableData.tongTien);
 
           const list_mon_cua_ban = tableData?.mon;
@@ -81,6 +85,7 @@ function TableItem({route, navigation}) {
               gioNghi: 'Chưa thanh toán',
               thoiGianChoi: 0,
               tienGio: 0,
+              tienGioConLai: 0,
               tienMenu: 0,
               tongTien: 0,
               mon: [],
@@ -107,6 +112,7 @@ function TableItem({route, navigation}) {
       title,
     });
   };
+  // HeaderRight Chọn Món
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -142,10 +148,8 @@ function TableItem({route, navigation}) {
         if (list_mon_cua_ban) {
           setMenuItems(list_mon_cua_ban);
           const menuMoney = tinhTienMenu(list_mon_cua_ban);
-          const totalMoney = data_table.tienGio + menuMoney;
+          const totalMoney = data_table.tienGioConLai + menuMoney;
           setTienMenu(menuMoney);
-          console.log('tienGio: ', tienGio);
-          console.log('menuMoney: ', menuMoney);
           setTongTien(totalMoney);
         }
       });
@@ -153,12 +157,6 @@ function TableItem({route, navigation}) {
     // Stop listening for updates when no longer required
     return () => subscriber();
   }, [title]);
-
-  // Thêm nút xóa món trên danh sách
-  // Thêm vài nút thêm , bớt , nhớ update lại món của bàn
-  const handleDeleteMon = (tableId, idItem) => {
-    // Xem index xoá là item nào trong menuItemList rồi xóa bằng splice(index, 1)
-  };
 
   // Khi bấm đặt giờ vào update giờ vào vào danh sách bàn , tìm đúng bàn theo title.
   const handelDatGioVao = () => {
@@ -172,6 +170,7 @@ function TableItem({route, navigation}) {
           gioNghi: 'Chưa thanh toán',
           thoiGianChoi: 0,
           tienGio: 0,
+          tienGioConLai: 0,
           tongTien: tienMenu,
         })
         .then(() => {
@@ -181,6 +180,7 @@ function TableItem({route, navigation}) {
       setGioNghi('Chưa thanh toán');
       setThoiGianChoi(0);
       setTienGio(0);
+      setTienGioConLai(0);
       setTongTien(tienMenu);
     }
     if (gioVao != 'Chưa đặt') {
@@ -217,14 +217,18 @@ function TableItem({route, navigation}) {
       console.log('valueGioVao: ', valueGioVao);
 
       if (valueGioVao != 'Chưa đặt') {
-        const timeClose = moment(currTime, 'HH:mm:ss, DD/MM/YYYY').valueOf();
-        const timeStart = moment(valueGioVao, 'HH:mm:ss, DD/MM/YYYY').valueOf();
+        const timeClose = moment(currTime, 'HH:mm, DD/MM/YYYY').valueOf();
+        const timeStart = moment(valueGioVao, 'HH:mm, DD/MM/YYYY').valueOf();
         let intervalTimeCost = timeClose - timeStart;
         if (intervalTimeCost > 0) {
           intervalTimeCost = Math.round(intervalTimeCost / 1000 / 60);
           const moneyTime = Math.ceil(
             (intervalTimeCost * tienGioMoiPhut) / 1000,
           );
+          const tienGioGiamGia = Math.ceil(
+            moneyTime - (moneyTime * giamGia) / 100,
+          );
+
           const totalMoney = moneyTime + tienMenu;
 
           firestore()
@@ -233,6 +237,7 @@ function TableItem({route, navigation}) {
             .update({
               gioNghi: currTime,
               tienGio: moneyTime,
+              tienGioConLai: tienGioGiamGia,
               thoiGianChoi: intervalTimeCost,
               tienMenu: tienMenu,
               tongTien: totalMoney,
@@ -243,6 +248,7 @@ function TableItem({route, navigation}) {
 
           setThoiGianChoi(intervalTimeCost);
           setTienGio(moneyTime);
+          setTienGioConLai(tienGioGiamGia);
           setTongTien(totalMoney);
           setGioNghi(currTime);
         } else {
@@ -277,6 +283,21 @@ function TableItem({route, navigation}) {
     }
   };
 
+  // Giảm giá
+  const handelInputGiamGia = value => {
+    if (tienGio > 0) {
+      const tienGioGiamGia = Math.ceil(tienGio - (tienGio * value) / 100);
+      setGiamGia(value);
+      setTienGioConLai(tienGioGiamGia);
+    }
+  };
+  const handleButtonGiamGia = () => {
+    if (tienGio > 0) {
+      const tienGioGiamGia = Math.ceil(tienGio - (tienGio * giamGia) / 100);
+      setTienGioConLai(tienGioGiamGia);
+    }
+  };
+
   // Thay đổi tiền giờ mỗi phút
   // Tính toán lại tiền giờ và tổng tiền
   async function handelChangeTienMoiPhut(newTienGioMoiPhut) {
@@ -296,8 +317,10 @@ function TableItem({route, navigation}) {
       const moneyTime = Math.ceil(
         (valueThoiGianChoi * newTienGioMoiPhut) / 1000,
       );
+      const tienGioGiamGia = Math.ceil(moneyTime - (moneyTime * giamGia) / 100);
       const totalMoney = moneyTime + tienMenu;
       setTienGio(moneyTime);
+      setTienGioConLai(tienGioGiamGia);
       setTongTien(totalMoney);
     }
     setTienGioMoiPhut(newTienGioMoiPhut);
@@ -315,6 +338,7 @@ function TableItem({route, navigation}) {
           gioNghi: 'Chưa thanh toán',
           thoiGianChoi: 0,
           tienGio: 0,
+          tienGioConLai: 0,
           tienMenu: 0,
           tongTien: 0,
           mon: [],
@@ -329,6 +353,7 @@ function TableItem({route, navigation}) {
       setGioNghi('Chưa thanh toán');
       setThoiGianChoi(0);
       setTienGio(0);
+      setTienGioConLai(0);
       setTongTien(0);
       setTienKhachDua(0);
       setTienThoiLai(0);
@@ -365,102 +390,29 @@ function TableItem({route, navigation}) {
     }
   };
 
-  const convertTV = string => {
-    let newStr = deburr(string);
-    console.log('newStr: ', newStr);
-    return newStr;
-  };
-
-  // convertTV('Nước uống');
-  //   console.log('NFD: ', NFD);
-
-  const getData = () => {
-    console.log('menuItems: ', menuItems);
-    const thoiGianChoiConvert = convertMinutesToTimeString(thoiGianChoi);
-    let gioVaoConvert = '';
-    let gioNghiConvert = '';
-    if (gioVao === 'Chưa đặt') {
-      gioVaoConvert = '';
-    }
-    if (gioNghi === 'Chưa bấm') {
-      gioNghiConvert = '';
-    }
-    let tenMon;
-
-    const data = `
-          ---------------------------------
-          \x1B\x45\x01          BIDA HVK\x1B\x45\x00
-          Tinh Phong, Son Tinh, Quang Ngai
-          ---------------------------------
-              PHIEU THANH TOAN
-              Ban: ${tableId}
-
-          Mat hang: 
-          ---------------------------------
-          Ten      SoLuong   Gia   ThanhTien
-          ${menuItems
-            .map((item, index) => {
-              tenMon = unidecode(item.TenMon);
-              tenMon = tenMon.padEnd(13, ' ');
-
-              let soLuong = item.soLuong;
-              soLuong = soLuong.toString().padEnd(2, ' ');
-
-              let gia = item.Gia;
-              gia = gia.toString().padEnd(4, ' ');
-              let thanh_tien = soLuong * gia;
-
-              if (index === 0) {
-                return `${tenMon}${soLuong}     ${gia}   ${thanh_tien} 000d\n`;
-              }
-
-              return `          ${tenMon}${soLuong}     ${gia}   ${thanh_tien} 000d\n`;
-            })
-            .join('')}
-          Tien menu:    ${tienMenu} 000d
-          ---------------------------------
-
-          Thoi gian vao: ${gioVaoConvert}
-          Thoi gian ra: ${gioNghiConvert}
-          Thoi gian choi:   ${thoiGianChoiConvert}
-
-          Tien gio:  ${tienGio} 000d   (${Math.round(tienGioMoiPhut * 60)}d/Gio)
-
-          \x1B\x45\x01TONG CONG:  ${tongTien} 000d\x1B\x45\x00
-          Cam on quy khach! Hen gap lai!
-          ---------------------------------
-          
-
-
-
-
-        
-
-
-
-
-
-
-          `;
-
-    // console.log(data);
-    return data;
-  };
-
   // Handle In hóa đơn
   const handelInHoaDon = () => {
     console.log('Printing...');
     const options = {
       port: 9100,
       host: '192.168.1.133',
-      // localAddress: '192.168.1.133',
-      // reuseAddress: true,
-      // localPort: 20000,
       interface: 'wifi',
     };
 
-    const data = getData();
-    // console.log('data:', data);
+    const data = getData(
+      gioVao,
+      gioNghi,
+      thoiGianChoi,
+      tableId,
+      menuItems,
+      tienMenu,
+      tienGio,
+      giamGia,
+      tienGioConLai,
+      tienGioMoiPhut,
+      tongTien,
+    );
+    console.log('data:', data);
 
     const client = TcpSocket.createConnection(options, () => {
       // Write on the socket
@@ -508,6 +460,7 @@ function TableItem({route, navigation}) {
     setSelectedItem(null);
     setModalVisible(false);
   };
+
   const renderItem = ({item}) => {
     const totalPrice = item.Gia * item.soLuong;
     return (
@@ -545,262 +498,257 @@ function TableItem({route, navigation}) {
   };
 
   return (
-    <View>
-      <TouchableWithoutFeedback>
-        {/* FlatList in ScrollView
+    <KeyboardAvoidingView style={{flex: 1}} behavior="position">
+      <View>
+        <TouchableWithoutFeedback>
+          {/* FlatList in ScrollView
             https://stackoverflow.com/questions/67623952/error-virtualizedlists-should-never-be-nested-inside-plain-scrollviews-with-th */}
-        <View style={{marginHorizontal: 8}}>
+          <View style={{marginHorizontal: 8}}>
+            <View>
+              {/* <ScrollView horizontal={true} style={{ width: '100%' }}> */}
+              <FlatList
+                data={menuItems}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                ListHeaderComponent={renderHeader}
+              />
+            </View>
+
+            {/* Thông tin hóa đơn */}
+            <View>
+              <View style={{flexDirection: 'row'}}>
+                <Text style={[styles.textTongTienThucDon, {minWidth: 246}]}>
+                  Tổng tiền thực đơn:
+                </Text>
+                <Text style={styles.textTongTienThucDon}>{tienMenu} 000đ</Text>
+              </View>
+              {/* Giờ vào */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  marginBottom: 10,
+                }}>
+                <Text style={styles.textGio}>Giờ vào: </Text>
+                <Text style={styles.textGio}>{gioVao} </Text>
+                <Pressable
+                  onPress={handelDatGioVao}
+                  style={({pressed}) => [
+                    styles.buttonDatGio,
+                    {
+                      backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontSize: 16,
+                      color: 'white',
+                    }}>
+                    Đặt giờ vào
+                  </Text>
+                </Pressable>
+              </View>
+              {/* Giờ nghỉ */}
+              <View
+                style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                <Text style={styles.textGio}>Giờ nghỉ: </Text>
+                <Text style={styles.textGio}>{gioNghi} </Text>
+                <Pressable
+                  onPress={handelDatGioNghi}
+                  style={({pressed}) => [
+                    styles.buttonDatGio,
+                    {
+                      backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
+                    },
+                  ]}>
+                  <Text style={styles.text_in_button}>Thanh toán</Text>
+                </Pressable>
+              </View>
+              {/* Thơi gian chơi */}
+              <View style={[styles.khu_vuc_gio]}>
+                <Text style={[styles.textThoiGianChoi, {minWidth: 246}]}>
+                  Thời gian chơi:{' '}
+                </Text>
+                <Text style={styles.textThoiGianChoi}>
+                  {convertMinutesToTimeString(thoiGianChoi)}
+                </Text>
+              </View>
+              {/*  Tiền giờ */}
+              <View style={[styles.khu_vuc_gio]}>
+                <Text style={[styles.textTongTien, {minWidth: 246}]}>
+                  Tiền Giờ:
+                </Text>
+                <Text style={styles.textTongTien}>{tienGio} 000đ</Text>
+              </View>
+              {/* Giảm giá */}
+              <View
+                style={[styles.khu_vuc_gio, {justifyContent: 'space-between'}]}>
+                <Text style={[styles.textThoiGianChoi, {minWidth: 100}]}>
+                  Giảm giá:
+                </Text>
+                <TextInput
+                  style={styles.textInputTienKhachDua}
+                  keyboardType="numeric"
+                  onChangeText={handelInputGiamGia}>
+                  {giamGia}
+                </TextInput>
+                <Text style={[styles.textThoiGianChoi]}>%</Text>
+
+                <Pressable
+                  onPress={handleButtonGiamGia}
+                  style={({pressed}) => [
+                    styles.buttonDatGio,
+                    {
+                      backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
+                    },
+                  ]}>
+                  <Text style={styles.text_in_button}>Giảm giá</Text>
+                </Pressable>
+              </View>
+              {/*  Tiền giờ */}
+              <View style={[styles.khu_vuc_gio, {marginBottom: 10}]}>
+                <Text style={[styles.textTongTien, {minWidth: 246}]}>
+                  Tiền Giờ Còn Lại :
+                </Text>
+                <Text style={styles.textTongTien}>{tienGioConLai} 000đ</Text>
+              </View>
+              {/* Tổng tiền thanh toán */}
+              <Text
+                style={[
+                  styles.textTongTien,
+                  {color: '#000', marginVertical: 4, fontSize: 20},
+                ]}>
+                Tổng tiền thanh toán: {tongTien} 000đ
+              </Text>
+              <View style={{flexDirection: 'row'}}>
+                <Text
+                  style={[
+                    styles.textThoiGianChoi,
+                    {minWidth: 246, color: '#5f5151', fontWeight: '500'},
+                  ]}>
+                  Tiền khách đưa:
+                </Text>
+                <TextInput
+                  style={styles.textInputTienKhachDua}
+                  keyboardType="numeric"
+                  onChangeText={handelThoiTien}>
+                  {tienKhachDua}
+                </TextInput>
+                <Text
+                  style={[
+                    styles.textThoiGianChoi,
+                    {minWidth: 246, color: '#000', fontWeight: '500'},
+                  ]}>
+                  000đ
+                </Text>
+              </View>
+              <View style={{flexDirection: 'row'}}>
+                <Text
+                  style={[
+                    styles.textThoiGianChoi,
+                    {minWidth: 246, color: '#5f5151', fontWeight: '500'},
+                  ]}>
+                  Tiền thừa:
+                </Text>
+                <Text
+                  style={[
+                    styles.textThoiGianChoi,
+                    {minWidth: 246, color: '#000', fontWeight: '500'},
+                  ]}>
+                  {tienThoiLai} 000đ
+                </Text>
+              </View>
+
+              {/* Tiền giờ mỗi phút */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                }}>
+                <Text style={styles.textTienGioMoiPhut}>Đơn giá mỗi phút:</Text>
+
+                <TextInput
+                  style={styles.textInputChangeTienMoiPhut}
+                  keyboardType="numeric"
+                  onChangeText={handelChangeTienMoiPhut}>
+                  {tienGioMoiPhut}
+                </TextInput>
+
+                <Text style={styles.textTienGioMoiPhut}>đồng</Text>
+                <Text style={styles.textTienGioMoiPhut}>
+                  ({(tienGioMoiPhut * 60) / 1000}K/giờ)
+                </Text>
+              </View>
+              {/*  Button đặt lại và in hóa đơn */}
+              <View
+                style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+                {/* In hóa đơn */}
+                <View style={styles.in_hoa_don_container}>
+                  <Pressable
+                    onPress={handelInHoaDon}
+                    style={({pressed}) => [
+                      styles.buttonDatGio,
+                      {
+                        backgroundColor: pressed
+                          ? 'rgb(210, 230, 255)'
+                          : 'blue',
+                      },
+                    ]}>
+                    <Text style={styles.text_in_button}>In hóa đơn</Text>
+                  </Pressable>
+                </View>
+                {/* Đặt lại */}
+                <View style={styles.dat_lai_container}>
+                  <Pressable
+                    onPress={handelReset}
+                    style={({pressed}) => [
+                      styles.buttonDatGio,
+                      {
+                        backgroundColor: pressed
+                          ? 'rgb(210, 230, 255)'
+                          : 'blue',
+                      },
+                    ]}>
+                    <Text style={styles.text_in_button}>Đặt lại</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+
+        {/* Modal thay đổi món trong danh sách */}
+        <Modal
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}>
           <View>
-            {/* <ScrollView horizontal={true} style={{ width: '100%' }}> */}
-            <FlatList
-              data={menuItems}
-              renderItem={renderItem}
-              keyExtractor={item => item.id}
-              ListHeaderComponent={renderHeader}
+            <Text style={{fontSize: 20}}>{selectedItem?.TenMon}</Text>
+            <TextInput
+              style={{marginTop: 20, fontSize: 16}}
+              placeholder="Nhập giá"
+              value={editedPrice}
+              onChangeText={text => setEditedPrice(text)}
             />
+            <TextInput
+              style={{marginTop: 10, fontSize: 16}}
+              placeholder="Nhập số lượng"
+              value={editedQuantity}
+              onChangeText={text => setEditedQuantity(text)}
+            />
+            <TouchableOpacity
+              style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
+              onPress={handleSave}>
+              <Text style={{color: 'white'}}>Lưu</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
+              onPress={handleSave}>
+              <Text style={{color: 'white'}}>Quay lại</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Thông tin hóa đơn */}
-          <View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.textTongTienThucDon, {minWidth: 246}]}>
-                Tổng tiền thực đơn:
-              </Text>
-              <Text style={styles.textTongTienThucDon}>{tienMenu} 000đ</Text>
-            </View>
-            {/* Giờ vào */}
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                marginBottom: 10,
-              }}>
-              <Text style={styles.textGio}>Giờ vào: </Text>
-              <Text style={styles.textGio}>{gioVao} </Text>
-              <Pressable
-                onPress={handelDatGioVao}
-                style={({pressed}) => [
-                  styles.buttonDatGio,
-                  {
-                    backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
-                  },
-                ]}>
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    fontSize: 16,
-                    color: 'white',
-                  }}>
-                  Đặt giờ vào
-                </Text>
-              </Pressable>
-            </View>
-            {/* Giờ nghỉ */}
-            <View
-              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-              <Text style={styles.textGio}>Giờ nghỉ: </Text>
-              <Text style={styles.textGio}>{gioNghi} </Text>
-              <Pressable
-                onPress={handelDatGioNghi}
-                style={({pressed}) => [
-                  styles.buttonDatGio,
-                  {
-                    backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
-                  },
-                ]}>
-                <Text
-                  style={{
-                    textAlign: 'center',
-                    fontSize: 16,
-                    color: 'white',
-                  }}>
-                  Thanh toán
-                </Text>
-              </Pressable>
-            </View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.textThoiGianChoi, {minWidth: 246}]}>
-                Thời gian chơi:{' '}
-              </Text>
-              <Text style={styles.textThoiGianChoi}>
-                {convertMinutesToTimeString(thoiGianChoi)}
-              </Text>
-            </View>
-            <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.textTongTien, {minWidth: 246}]}>
-                Tiền Giờ:
-              </Text>
-              <Text style={styles.textTongTien}>{tienGio} 000đ</Text>
-            </View>
-            {/* Giảm giá */}
-            {/* <View style={{flexDirection: 'row'}}>
-              <Text style={[styles.textGiamGia, {minWidth: 100}]}>
-                Giảm giá:
-              </Text>
-              <TextInput
-                style={styles.textInputTienKhachDua}
-                keyboardType="numeric"
-                onChangeText={handelInputGiamGia}>
-                {tienKhachDua}
-              </TextInput>
-              <TouchableOpacity
-                style={{backgroundColor: 'blue', padding: 10}}
-                onPress={handleButtonGiamGia}>
-                <Text style={{color: 'white'}}>Lưu</Text>
-              </TouchableOpacity>
-            </View> */}
-            <Text
-              style={[
-                styles.textTongTien,
-                {color: '#000', marginVertical: 4, fontSize: 20},
-              ]}>
-              Tổng tiền thanh toán: {tongTien} 000đ
-            </Text>
-            <View style={{flexDirection: 'row'}}>
-              <Text
-                style={[
-                  styles.textThoiGianChoi,
-                  {minWidth: 246, color: '#5f5151', fontWeight: '500'},
-                ]}>
-                Tiền khách đưa:
-              </Text>
-              <TextInput
-                style={styles.textInputTienKhachDua}
-                keyboardType="numeric"
-                onChangeText={handelThoiTien}>
-                {tienKhachDua}
-              </TextInput>
-              <Text
-                style={[
-                  styles.textThoiGianChoi,
-                  {minWidth: 246, color: '#000', fontWeight: '500'},
-                ]}>
-                000đ
-              </Text>
-            </View>
-            <View style={{flexDirection: 'row'}}>
-              <Text
-                style={[
-                  styles.textThoiGianChoi,
-                  {minWidth: 246, color: '#5f5151', fontWeight: '500'},
-                ]}>
-                Tiền thừa:
-              </Text>
-              <Text
-                style={[
-                  styles.textThoiGianChoi,
-                  {minWidth: 246, color: '#000', fontWeight: '500'},
-                ]}>
-                {tienThoiLai} 000đ
-              </Text>
-            </View>
-
-            {/* Tiền giờ mỗi phút */}
-            <View
-              style={{
-                flexDirection: 'row',
-              }}>
-              <Text style={styles.textTienGioMoiPhut}>Đơn giá mỗi phút:</Text>
-
-              <TextInput
-                style={styles.textInputChangeTienMoiPhut}
-                keyboardType="numeric"
-                onChangeText={handelChangeTienMoiPhut}>
-                {tienGioMoiPhut}
-              </TextInput>
-
-              <Text style={styles.textTienGioMoiPhut}>đồng</Text>
-              <Text style={styles.textTienGioMoiPhut}>
-                ({(tienGioMoiPhut * 60) / 1000}K/giờ)
-              </Text>
-            </View>
-            {/*  Button đặt lại và in hóa đơn */}
-            <View
-              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-              {/* In hóa đơn */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'flex-start',
-                  marginTop: 8,
-                }}>
-                <Pressable
-                  onPress={handelInHoaDon}
-                  style={({pressed}) => [
-                    styles.buttonDatGio,
-                    {
-                      backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
-                    },
-                  ]}>
-                  <Text
-                    style={{
-                      textAlign: 'center',
-                      fontSize: 16,
-                      color: 'white',
-                    }}>
-                    In hóa đơn
-                  </Text>
-                </Pressable>
-              </View>
-              {/* Đặt lại */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'flex-end',
-                  marginTop: 8,
-                }}>
-                <Pressable
-                  onPress={handelReset}
-                  style={({pressed}) => [
-                    styles.buttonDatGio,
-                    {
-                      backgroundColor: pressed ? 'rgb(210, 230, 255)' : 'blue',
-                    },
-                  ]}>
-                  <Text
-                    style={{
-                      textAlign: 'center',
-                      fontSize: 16,
-                      color: 'white',
-                    }}>
-                    Đặt lại
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-      <Modal
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View>
-          <Text style={{fontSize: 20}}>{selectedItem?.TenMon}</Text>
-          <TextInput
-            style={{marginTop: 20, fontSize: 16}}
-            placeholder="Nhập giá"
-            value={editedPrice}
-            onChangeText={text => setEditedPrice(text)}
-          />
-          <TextInput
-            style={{marginTop: 10, fontSize: 16}}
-            placeholder="Nhập số lượng"
-            value={editedQuantity}
-            onChangeText={text => setEditedQuantity(text)}
-          />
-          <TouchableOpacity
-            style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
-            onPress={handleSave}>
-            <Text style={{color: 'white'}}>Lưu</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{marginTop: 20, backgroundColor: 'blue', padding: 10}}
-            onPress={handleSave}>
-            <Text style={{color: 'white'}}>Quay lại</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 export default TableItem;
@@ -904,6 +852,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: 10,
     flex: 1,
+  },
+  // IN hoa đơn
+  in_hoa_don_container: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginTop: 8,
+  },
+  // Button đặt lại
+  dat_lai_container: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+
+  // commond
+  text_in_button: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: 'white',
+  },
+  khu_vuc_gio: {
+    flexDirection: 'row',
+    backgroundColor: '#ccc',
+    // marginBottom: 50,
   },
 });
 

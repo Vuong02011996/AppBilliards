@@ -70,3 +70,11 @@
 - Chức năng lọc ở màn hình chọn món.
 
 - Tạo file apk.
+
+# HOT FIX
+
+- map - Flat.
+- Giảm giá
+- Xóa , Sửa món ở màn hình Tạo món
+- Update số lượng khi món đã chọn.
+- Hiển thị thời gian chơi và Số tiền đang chơi ở SƠ đồ bàn.

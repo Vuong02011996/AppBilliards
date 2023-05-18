@@ -29,13 +29,15 @@ import {
 
 function TableItem({route, navigation}) {
   // Danh sách chứa các Món(component MenuItem) để render
+  const {tableId, title, price} = route.params;
+
   const [menuItems, setMenuItems] = useState([]);
   const [tienMenu, setTienMenu] = useState(0);
 
   const [gioVao, setGioVao] = useState('Chưa đặt');
   const [gioNghi, setGioNghi] = useState('Chưa thanh toán');
   const [thoiGianChoi, setThoiGianChoi] = useState(0);
-  const [tienGioMoiPhut, setTienGioMoiPhut] = useState(600);
+  const [tienGioMoiPhut, setTienGioMoiPhut] = useState(price);
 
   const [tienGio, setTienGio] = useState(0);
   const [giamGia, setGiamGia] = useState(30);
@@ -45,7 +47,6 @@ function TableItem({route, navigation}) {
   const [tienKhachDua, setTienKhachDua] = useState(0);
   const [tienThoiLai, setTienThoiLai] = useState(0);
 
-  const {tableId, title} = route.params;
   // Dùng title làm table Id và Id cho document của bàn .
 
   // Lần đầu tiên bấm vào bàn => bàn chưa có trên DB Danh sách bàn thì add vào DB
@@ -137,7 +138,7 @@ function TableItem({route, navigation}) {
     });
   }, [navigation]);
 
-  // Lắng nghe realtime món của bàn thay đổi từ chọn món render lại danh sách món.
+  // Lắng nghe realtime món của bàn thay đổi từ chọn món, giờ chơi render lại danh sách món.
   useEffect(() => {
     const subscriber = firestore()
       .collection('Danh sach ban')
@@ -153,6 +154,7 @@ function TableItem({route, navigation}) {
           setTienMenu(menuMoney);
           setTongTien(totalMoney);
         }
+        console.log('data_table', data_table);
       });
 
     // Stop listening for updates when no longer required
@@ -253,9 +255,7 @@ function TableItem({route, navigation}) {
           setTongTien(totalMoney);
           setGioNghi(currTime);
         } else {
-          Alert.alert(
-            'Giờ vào đặt sau giờ nghỉ!, Vui lòng đặt giờ vào trước rồi mới bấm giờ nghỉ!',
-          );
+          Alert.alert('Giờ vào lớn hơn giờ nghỉ');
         }
       } else {
         Alert.alert(
@@ -437,6 +437,166 @@ function TableItem({route, navigation}) {
     }
   }, [tongTien, tienKhachDua]);
 
+  // Chỉnh giờ
+  const [modalChangeGio, setModalChangeGio] = useState(false);
+  const [editedGio, setEditedGio] = useState('');
+  const [editePhut, setEditedPhut] = useState('');
+  const [typeGio, setTypeGio] = useState('');
+
+  const changeGio = (gio, type_gio) => {
+    setModalChangeGio(true);
+    const hours = gio.split(':')[0];
+    const minutes = gio.split(':')[1];
+    setEditedGio(hours);
+    setEditedPhut(minutes);
+    setTypeGio(type_gio);
+  };
+
+  const handleSaveChangeGio = () => {
+    setModalChangeGio(false);
+    console.log('editedGio: ', editedGio);
+    console.log('editePhut: ', editePhut);
+
+    if (typeGio === 'GioVao') {
+      // Split the string into parts
+      let strGio = gioVao;
+      const parts = strGio.split(/[:,]/);
+      // Update the respective parts with new values
+      parts[0] = editedGio;
+      parts[1] = editePhut;
+      parts[2] = '00';
+      strGio = parts.join(':');
+
+      if (gioNghi != 'Chưa đặt') {
+        const timeClose = moment(gioNghi, 'HH:mm, DD/MM/YYYY').valueOf();
+        const timeStart = moment(strGio, 'HH:mm, DD/MM/YYYY').valueOf();
+        let intervalTimeCost = timeClose - timeStart;
+        if (intervalTimeCost > 0) {
+          intervalTimeCost = Math.round(intervalTimeCost / 1000 / 60);
+          const moneyTime = Math.ceil(
+            (intervalTimeCost * tienGioMoiPhut) / 1000,
+          );
+          const tienGioGiamGia = Math.ceil(
+            moneyTime - (moneyTime * giamGia) / 100,
+          );
+
+          const totalMoney = moneyTime + tienMenu;
+
+          firestore()
+            .collection('Danh sach ban')
+            .doc(title)
+            .update({
+              gioVao: strGio,
+              tienGio: moneyTime,
+              tienGioConLai: tienGioGiamGia,
+              thoiGianChoi: intervalTimeCost,
+              tienMenu: tienMenu,
+              tongTien: totalMoney,
+            })
+            .then(() => {
+              console.log('Updated bấm giờ nghỉ thanh toán!');
+            });
+
+          setThoiGianChoi(intervalTimeCost);
+          setTienGio(moneyTime);
+          setTienGioConLai(tienGioGiamGia);
+          setTongTien(totalMoney);
+        } else {
+          Alert.alert('Giờ vào lớn hơn giờ nghỉ');
+          firestore()
+            .collection('Danh sach ban')
+            .doc(title)
+            .update({
+              gioVao: strGio,
+            })
+            .then(() => {
+              console.log('Updated bấm giờ nghỉ thanh toán!');
+            });
+        }
+      } else {
+        firestore()
+          .collection('Danh sach ban')
+          .doc(title)
+          .update({
+            gioVao: strGio,
+          })
+          .then(() => {
+            console.log('Updated bấm giờ nghỉ thanh toán!');
+          });
+        // Alert.alert('Chưa bấm giờ nghỉ ');
+      }
+      setGioVao(strGio);
+    }
+    if (typeGio === 'GioNghi') {
+      let strGio = gioNghi;
+      const parts = strGio.split(/[:,]/);
+      // Update the respective parts with new values
+      parts[0] = editedGio;
+      parts[1] = editePhut;
+      parts[2] = '00';
+      strGio = parts.join(':');
+      // Tính toán lại thời gian chơi
+      if (gioVao != 'Chưa đặt') {
+        const timeClose = moment(strGio, 'HH:mm, DD/MM/YYYY').valueOf();
+        const timeStart = moment(gioVao, 'HH:mm, DD/MM/YYYY').valueOf();
+        let intervalTimeCost = timeClose - timeStart;
+        if (intervalTimeCost > 0) {
+          intervalTimeCost = Math.round(intervalTimeCost / 1000 / 60);
+          const moneyTime = Math.ceil(
+            (intervalTimeCost * tienGioMoiPhut) / 1000,
+          );
+          const tienGioGiamGia = Math.ceil(
+            moneyTime - (moneyTime * giamGia) / 100,
+          );
+
+          const totalMoney = moneyTime + tienMenu;
+
+          firestore()
+            .collection('Danh sach ban')
+            .doc(title)
+            .update({
+              gioNghi: strGio,
+              tienGio: moneyTime,
+              tienGioConLai: tienGioGiamGia,
+              thoiGianChoi: intervalTimeCost,
+              tienMenu: tienMenu,
+              tongTien: totalMoney,
+            })
+            .then(() => {
+              console.log('Updated thay đổi giờ nghỉ!');
+            });
+
+          setThoiGianChoi(intervalTimeCost);
+          setTienGio(moneyTime);
+          setTienGioConLai(tienGioGiamGia);
+          setTongTien(totalMoney);
+        } else {
+          firestore()
+            .collection('Danh sach ban')
+            .doc(title)
+            .update({
+              gioNghi: strGio,
+            })
+            .then(() => {
+              console.log('Giờ vào lớn hơn giờ nghỉ!');
+            });
+          Alert.alert('Giờ vào lớn hơn giờ nghỉ');
+        }
+      } else {
+        firestore()
+          .collection('Danh sach ban')
+          .doc(title)
+          .update({
+            gioNghi: strGio,
+          })
+          .then(() => {
+            console.log('Thay đổi giờ nghỉ nhưng chưa bấm giờ vào!');
+          });
+      }
+      setGioNghi(strGio);
+    }
+  };
+
   // Chỉnh sửa giá và số lượng
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedItemIndex, setSelectedItemIndex] = useState(null);
@@ -473,7 +633,7 @@ function TableItem({route, navigation}) {
         mon: newMenuItems,
       })
       .then(() => {
-        console.log('User updated!');
+        console.log('mon updated!');
       });
     // Thực hiện các xử lý khác tại đây, ví dụ như gửi request lưu thông tin
     setSelectedItem(null);
@@ -566,7 +726,11 @@ function TableItem({route, navigation}) {
                   marginBottom: 10,
                 }}>
                 <Text style={styles.textGio}>Giờ vào: </Text>
-                <Text style={styles.textGio}>{gioVao} </Text>
+                <Text
+                  onPress={() => changeGio(gioVao, 'GioVao')}
+                  style={styles.textGio}>
+                  {gioVao}{' '}
+                </Text>
                 <Pressable
                   onPress={handelDatGioVao}
                   style={({pressed}) => [
@@ -589,7 +753,11 @@ function TableItem({route, navigation}) {
               <View
                 style={{flexDirection: 'row', justifyContent: 'space-between'}}>
                 <Text style={styles.textGio}>Giờ nghỉ: </Text>
-                <Text style={styles.textGio}>{gioNghi} </Text>
+                <Text
+                  onPress={() => changeGio(gioNghi, 'GioNghi')}
+                  style={styles.textGio}>
+                  {gioNghi}{' '}
+                </Text>
                 <Pressable
                   onPress={handelDatGioNghi}
                   style={({pressed}) => [
@@ -788,6 +956,46 @@ function TableItem({route, navigation}) {
               <Text style={styles.text_button_modal}>Xóa</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.button_modal} onPress={handleSave}>
+              <Text style={styles.text_button_modal}>Quay lại</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+        {/* Modal thay đổi giờ trong danh sách */}
+        <Modal
+          visible={modalChangeGio}
+          onRequestClose={() => setModalChangeGio(false)}>
+          <View style={{margin: 10}}>
+            <Text style={{fontSize: 20}}>Thay đổi giờ: </Text>
+            <View style={styles.input_modal_container}>
+              <Text style={styles.text_modal}>Giờ: </Text>
+              <TextInput
+                style={styles.input_modal}
+                keyboardType="numeric"
+                placeholder="Nhập giá"
+                value={editedGio}
+                onChangeText={text => setEditedGio(text)}
+              />
+            </View>
+            <View style={styles.input_modal_container}>
+              <Text style={styles.text_modal}>Phút: </Text>
+              <TextInput
+                style={styles.input_modal}
+                keyboardType="numeric"
+                placeholder="Nhập số lượng"
+                value={editePhut}
+                onChangeText={text => setEditedPhut(text)}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.button_modal}
+              onPress={handleSaveChangeGio}>
+              <Text style={styles.text_button_modal}>Lưu</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.button_modal}
+              onPress={handleSaveChangeGio}>
               <Text style={styles.text_button_modal}>Quay lại</Text>
             </TouchableOpacity>
           </View>

@@ -18,83 +18,68 @@ const convertDay = {
   6: 'Thứ bảy',
   7: 'Chủ Nhật',
 };
-function TableComponent(props) {
-  const {table, onPress} = props;
-  // console.log('props: ', props);
-  // let curTime = new Date().toLocaleString();
-  let d = new Date();
-  let day = d.getDay();
-
-  // console.log(curTime);
-  const [currentTime, setcurentTime] = React.useState();
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      setcurentTime(new Date().toLocaleString());
-    }, 1000);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
-  return (
-    <TouchableOpacity
-      activeOpacity={0.3}
-      onPress={onPress}
-      style={{
-        // heighpadpadt: 100,
-        paddingVertical: 10,
-        borderRadius: 4,
-        shadowColor: '#171717',
-        shadowOffset: {width: 0, height: 0},
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
-        // shawdow for android
-        elevation: 5,
-        marginBottom: 16,
-      }}>
-      <View style={{alignItems: 'center', justifyContent: 'center'}}>
-        <Text
-          style={{
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            fontWeight: '600',
-            fontSize: 24,
-            marginTop: 20,
-            // textAlign: 'center',
-            // textAlignVertical: 'center',
-          }}>
-          {table.name}
-        </Text>
-        <Text
-          style={{
-            textTransform: 'uppercase',
-            marginBottom: 8,
-            fontWeight: '600',
-            textAlign: 'center',
-            textAlignVertical: 'center',
-            color: 'green',
-          }}>
-          {convertDay[String(day)]} {currentTime}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
 
 export default function ListTable({navigation}) {
   // removeValueOfKey(KEY_TABLE_ITEM);
 
   const state = {
     categories: [
-      {id: 1, name: 'Bàn 1', loai: 'Bida lib', backgroundColor: '#8af0b2'},
-      {id: 2, name: 'Bàn 2', loai: 'Bida lib', backgroundColor: '#8af0b2'},
-      {id: 3, name: 'Bàn 3', loai: 'Bida lib', backgroundColor: '#8af0b2'},
-      {id: 4, name: 'Bàn 4', loai: 'Bida 3C', backgroundColor: 'green'},
-      {id: 5, name: 'Bàn 5', loai: 'Bida 3C', backgroundColor: 'green'},
-      {id: 6, name: 'Bàn 6', loai: 'Bida lỗ', backgroundColor: 'yellow'},
-      {id: 7, name: 'Bàn 7', loai: 'Bida lib', backgroundColor: '#8af0b2'},
-      {id: 8, name: 'Bàn 8', loai: 'Bida lib', backgroundColor: '#8af0b2'},
+      {
+        id: 1,
+        name: 'Bàn 1',
+        loai: 'Bida lib',
+        backgroundColor: '#8af0b2',
+        price: 600,
+      },
+      {
+        id: 2,
+        name: 'Bàn 2',
+        loai: 'Bida lib',
+        backgroundColor: '#8af0b2',
+        price: 600,
+      },
+      {
+        id: 3,
+        name: 'Bàn 3',
+        loai: 'Bida lib',
+        backgroundColor: '#8af0b2',
+        price: 600,
+      },
+      {
+        id: 4,
+        name: 'Bàn 4',
+        loai: 'Bida 3C',
+        backgroundColor: 'green',
+        price: 750,
+      },
+      {
+        id: 5,
+        name: 'Bàn 5',
+        loai: 'Bida 3C',
+        backgroundColor: 'green',
+        price: 750,
+      },
+      {
+        id: 6,
+        name: 'Bàn 6',
+        loai: 'Bida lỗ',
+        backgroundColor: 'yellow',
+        price: 600,
+      },
+      {
+        id: 7,
+        name: 'Bàn 7',
+        loai: 'Bida lib',
+        backgroundColor: '#8af0b2',
+        price: 600,
+      },
+      {
+        id: 8,
+        name: 'Bàn 8',
+        loai: 'Bida lib',
+        backgroundColor: '#8af0b2',
+        price: 600,
+      },
     ],
   };
 
@@ -105,10 +90,11 @@ export default function ListTable({navigation}) {
     navigation.navigate('TaoMon');
   };
 
-  const pressTableItem = (tableId, title) => {
+  const pressTableItem = (tableId, title, price) => {
     navigation.navigate('TableItem', {
       tableId: tableId,
       title: title,
+      price: price,
     });
   };
 
@@ -117,7 +103,13 @@ export default function ListTable({navigation}) {
       <View style={styles.danhsachban}>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[0].id, categories[0].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[0].id,
+              categories[0].name,
+              categories[0].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_left,
@@ -130,7 +122,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[5].id, categories[5].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[5].id,
+              categories[5].name,
+              categories[5].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_right,
@@ -143,7 +141,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[1].id, categories[1].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[1].id,
+              categories[1].name,
+              categories[1].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_left,
@@ -156,7 +160,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[6].id, categories[6].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[6].id,
+              categories[6].name,
+              categories[6].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_right,
@@ -169,7 +179,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[2].id, categories[2].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[2].id,
+              categories[2].name,
+              categories[2].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_left,
@@ -182,7 +198,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[7].id, categories[7].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[7].id,
+              categories[7].name,
+              categories[7].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_right,
@@ -195,7 +217,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[3].id, categories[3].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[3].id,
+              categories[3].name,
+              categories[3].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_left,
@@ -208,7 +236,13 @@ export default function ListTable({navigation}) {
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.3}
-          onPress={() => pressTableItem(categories[4].id, categories[4].name)}
+          onPress={() =>
+            pressTableItem(
+              categories[4].id,
+              categories[4].name,
+              categories[4].price,
+            )
+          }
           style={[
             styles.table_item,
             styles.table_left,
